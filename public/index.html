@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <!-- Android font fix: prevent browser from auto-shrinking text -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+
+    <!-- PWA / App feel -->
+    <meta name="theme-color" content="#0b0918" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="JEE Master" />
+
+    <!-- SEO -->
+    <meta name="description" content="JEE Master — IIT Prep Tracker for Physics, Chemistry & Mathematics" />
+    <title>JEE Master</title>
+
+    <!-- Google Fonts preconnect for faster load -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+    <style>
+      /* Critical: stops Android from shrinking fonts */
+      html {
+        -webkit-text-size-adjust: 100% !important;
+        text-size-adjust: 100% !important;
+      }
+      /* Prevent white flash on load */
+      body {
+        margin: 0;
+        padding: 0;
+        background: #0b0918;
+        overflow: hidden;
+        overscroll-behavior: none;
+        -webkit-text-size-adjust: 100% !important;
+        text-size-adjust: 100% !important;
+      }
+      /* Loading screen shown before React mounts */
+      #root:empty::after {
+        content: '';
+        display: block;
+        width: 100vw;
+        height: 100vh;
+        background: #0b0918;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run JEE Master.</noscript>
+    <div id="root"></div>
+  </body>
+</html>
