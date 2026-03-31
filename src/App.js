@@ -60,6 +60,21 @@ const GLOBAL_CSS = `
     perspective: 1000;
   }
 
+  :root {
+    --cosmic-bg: #050812;
+    --cosmic-surface: #090e1f;
+    --cosmic-card: rgba(12,17,38,0.85);
+    --cosmic-border: rgba(99,102,241,0.18);
+    --cosmic-border-bright: rgba(129,140,248,0.35);
+    --violet: #818cf8;
+    --violet-bright: #a5b4fc;
+    --violet-deep: #4f46e5;
+    --cyan: #22d3ee;
+    --gold: #f59e0b;
+    --rose: #f43f5e;
+    --emerald: #10b981;
+  }
+
   /* Calligraphy UI polish */
   .callig-title {
     font-family: 'Cinzel', serif;
@@ -78,12 +93,63 @@ const GLOBAL_CSS = `
     text-transform: uppercase;
   }
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar { width: 3px; height: 3px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(124,58,237,0.25); border-radius: 10px; }
-  ::-webkit-scrollbar-thumb:hover { background: rgba(124,58,237,0.45); }
+  ::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.3); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(129,140,248,0.5); }
   button, input, select, textarea { font-family: inherit; }
   textarea { scrollbar-width: thin; }
+
+  /* ── STAR FIELD ── */
+  .star-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(1px 1px at 10% 15%, rgba(255,255,255,0.55) 0%, transparent 100%),
+      radial-gradient(1px 1px at 23% 78%, rgba(255,255,255,0.45) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 38% 30%, rgba(200,210,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 52% 67%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 65% 18%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 74% 88%, rgba(200,210,255,0.55) 0%, transparent 100%),
+      radial-gradient(1px 1px at 88% 44%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 5% 56%, rgba(255,255,255,0.35) 0%, transparent 100%),
+      radial-gradient(1px 1px at 45% 90%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(2px 2px at 80% 12%, rgba(160,180,255,0.6) 0%, transparent 100%),
+      radial-gradient(1px 1px at 30% 50%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 92% 72%, rgba(255,255,255,0.45) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 18% 92%, rgba(200,210,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 57% 5%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 70% 55%, rgba(255,255,255,0.35) 0%, transparent 100%);
+    animation: starsShift 90s linear infinite;
+  }
+
+  /* ── GLASS CARD ── */
+  .glass-card {
+    background: rgba(13,18,42,0.7);
+    border: 1px solid rgba(99,102,241,0.2);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-radius: 20px;
+    box-shadow: 0 4px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  /* ── GLOW BUTTON ── */
+  .glow-btn {
+    position: relative;
+    overflow: hidden;
+    transition: all 0.2s ease;
+  }
+  .glow-btn::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    transform: translateX(-100%);
+    transition: transform 0.4s ease;
+  }
+  .glow-btn:hover::after { transform: translateX(100%); }
 
   @keyframes fadeSlideUp  { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
   @keyframes slideInRight { from{opacity:0;transform:translateX(40px)} to{opacity:1;transform:translateX(0)} }
@@ -102,18 +168,38 @@ const GLOBAL_CSS = `
     66%{transform:translateY(-5px) rotate(-1deg)}
   }
   @keyframes haloGlow {
-    0%,100%{box-shadow:0 0 0 0 rgba(168,85,247,0)}
-    50%{box-shadow:0 0 0 6px rgba(168,85,247,0.12)}
+    0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0)}
+    50%{box-shadow:0 0 0 8px rgba(99,102,241,0.14)}
   }
   @keyframes goldPulse {
-    0%,100%{box-shadow:0 0 0 0 rgba(212,175,55,0)}
-    50%{box-shadow:0 0 12px 3px rgba(212,175,55,0.25)}
+    0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,0)}
+    50%{box-shadow:0 0 14px 4px rgba(245,158,11,0.25)}
   }
   @keyframes sakuraDrift {
     0%   { transform: translateX(0) translateY(0) rotate(0deg); opacity:0.9; }
     50%  { transform: translateX(20px) translateY(30px) rotate(180deg); opacity:0.7; }
     100% { transform: translateX(-10px) translateY(60px) rotate(360deg); opacity:0; }
   }
+  @keyframes starsShift {
+    0% { opacity: 0.6; transform: translateY(0); }
+    50% { opacity: 1; transform: translateY(-4px); }
+    100% { opacity: 0.6; transform: translateY(0); }
+  }
+  @keyframes orbitPulse {
+    0%,100% { transform: scale(1) rotate(0deg); opacity: 0.6; }
+    50% { transform: scale(1.08) rotate(3deg); opacity: 0.9; }
+  }
+  @keyframes loadingBar {
+    0% { width: 0%; }
+    60% { width: 80%; }
+    100% { width: 100%; }
+  }
+  @keyframes auroraShift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
+
   .subject-card-3d {
     transition: transform 0.35s cubic-bezier(.25,.46,.45,.94), box-shadow 0.35s ease;
     will-change: transform;
@@ -125,9 +211,683 @@ const GLOBAL_CSS = `
   .subject-card-3d:active {
     transform: scale(0.97) translateZ(0) !important;
   }
+
+  /* ══════════════════════════════════════════════════
+     AFTER EFFECTS LAYER SYSTEM
+  ══════════════════════════════════════════════════ */
+
+  /* ── AE: GLOW (neon pulsing border glow) ── */
+  .ae-glow {
+    animation: aeGlowPulse 4s ease infinite;
+  }
+  .ae-glow-cyan {
+    animation: aeGlowCyan 3.5s ease infinite;
+  }
+  .ae-glow-gold {
+    animation: aeGlowGold 4.5s ease infinite;
+  }
+  @keyframes aeGlowPulse {
+    0%,100% {
+      box-shadow: 0 0 8px rgba(129,140,248,0.25),
+                  0 0 24px rgba(99,102,241,0.12),
+                  inset 0 1px 0 rgba(255,255,255,0.05);
+    }
+    50% {
+      box-shadow: 0 0 18px rgba(129,140,248,0.55),
+                  0 0 45px rgba(99,102,241,0.28),
+                  0 0 70px rgba(79,70,229,0.12),
+                  inset 0 1px 0 rgba(255,255,255,0.08);
+    }
+  }
+  @keyframes aeGlowCyan {
+    0%,100% {
+      box-shadow: 0 0 8px rgba(34,211,238,0.2),
+                  0 0 20px rgba(34,211,238,0.08);
+    }
+    50% {
+      box-shadow: 0 0 20px rgba(34,211,238,0.55),
+                  0 0 50px rgba(34,211,238,0.25),
+                  0 0 80px rgba(34,211,238,0.1);
+    }
+  }
+  @keyframes aeGlowGold {
+    0%,100% {
+      box-shadow: 0 0 8px rgba(245,158,11,0.2),
+                  0 0 20px rgba(245,158,11,0.08);
+    }
+    50% {
+      box-shadow: 0 0 18px rgba(245,158,11,0.5),
+                  0 0 40px rgba(245,158,11,0.22);
+    }
+  }
+
+  /* ── AE: ECHO (motion trail ripple rings) ── */
+  .ae-echo-ring {
+    position: absolute;
+    inset: -4px;
+    border-radius: inherit;
+    border: 1px solid rgba(129,140,248,0.4);
+    animation: aeEchoRipple 2.8s ease-out infinite;
+    pointer-events: none;
+  }
+  .ae-echo-ring:nth-child(2) { animation-delay: 0.9s; }
+  .ae-echo-ring:nth-child(3) { animation-delay: 1.8s; }
+  @keyframes aeEchoRipple {
+    0%   { transform: scale(1);   opacity: 0.55; }
+    100% { transform: scale(2.0); opacity: 0; }
+  }
+
+  /* ── AE: MOTION TILE (repeating animated grid) ── */
+  .ae-motion-tile {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.022;
+    background-image:
+      linear-gradient(rgba(99,102,241,1) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,1) 1px, transparent 1px);
+    background-size: 48px 48px;
+    animation: motionTileScroll 35s linear infinite;
+  }
+  @keyframes motionTileScroll {
+    0%   { background-position: 0 0; }
+    100% { background-position: 48px 48px; }
+  }
+
+  /* ── AE: TURBULENT DISPLACE (text shimmer warp) ── */
+  .ae-turbulent-title {
+    animation: aeTurbulentGlow 6s ease infinite;
+  }
+  @keyframes aeTurbulentGlow {
+    0%,100% {
+      text-shadow: 0 0 24px rgba(129,140,248,0.5),
+                   0 0 50px rgba(99,102,241,0.2);
+      filter: brightness(1);
+    }
+    33% {
+      text-shadow: 0 0 30px rgba(34,211,238,0.6),
+                   0 0 60px rgba(34,211,238,0.25),
+                   0 0 90px rgba(34,211,238,0.1);
+      filter: brightness(1.08);
+    }
+    66% {
+      text-shadow: 0 0 28px rgba(168,85,247,0.55),
+                   0 0 55px rgba(168,85,247,0.22);
+      filter: brightness(1.05);
+    }
+  }
+
+  /* ── AE: FRACTAL NOISE (scan-line texture pulse) ── */
+  .ae-scanlines {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(99,102,241,0.012) 2px,
+      rgba(99,102,241,0.012) 4px
+    );
+    animation: aeScanlineDrift 8s linear infinite;
+  }
+  @keyframes aeScanlineDrift {
+    0%   { transform: translateY(0); }
+    100% { transform: translateY(4px); }
+  }
+
+  /* ── AE: CC PARTICLE WORLD canvas ── */
+  .ae-particle-canvas {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ── Header glow line ── */
+  .ae-header-glow-line {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(99,102,241,0.5) 20%,
+      rgba(34,211,238,0.6) 50%,
+      rgba(99,102,241,0.5) 80%,
+      transparent 100%
+    );
+    animation: aeHeaderLinePulse 4s ease infinite;
+  }
+  @keyframes aeHeaderLinePulse {
+    0%,100% { opacity: 0.5; filter: blur(0px); }
+    50%     { opacity: 1.0; filter: blur(0.5px) brightness(1.5); }
+  }
+
+  /* ═══════════════════════════════════════════════════════
+     MASSIVE 3D EFFECT SYSTEM — ALL PAGES
+  ═══════════════════════════════════════════════════════ */
+
+  /* ── 3D CARD FLIP HOVER ── */
+  .card-3d-flip {
+    transform-style: preserve-3d;
+    transition: transform 0.5s cubic-bezier(.25,.46,.45,.94);
+    will-change: transform;
+  }
+  .card-3d-flip:hover {
+    transform: perspective(800px) rotateY(8deg) rotateX(-4deg) translateZ(16px) scale(1.02);
+  }
+  .card-3d-flip:active {
+    transform: perspective(800px) rotateY(2deg) rotateX(-1deg) translateZ(4px) scale(0.98);
+  }
+
+  /* ── 3D DEEP PERSPECTIVE CARD ── */
+  .card-3d-deep {
+    transform-style: preserve-3d;
+    transition: all 0.4s cubic-bezier(.34,1.56,.64,1);
+    position: relative;
+  }
+  .card-3d-deep::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(129,140,248,0.4), rgba(34,211,238,0.2), rgba(168,85,247,0.3));
+    opacity: 0;
+    transition: opacity 0.3s;
+    z-index: -1;
+    filter: blur(8px);
+  }
+  .card-3d-deep:hover::before { opacity: 1; }
+  .card-3d-deep:hover {
+    transform: perspective(600px) rotateY(-6deg) rotateX(3deg) translateZ(20px);
+    box-shadow: 20px 30px 60px rgba(0,0,0,0.8), -10px 0 40px rgba(99,102,241,0.2), 0 0 80px rgba(34,211,238,0.1) !important;
+  }
+
+  /* ── 3D FLOATING CARD PULSE ── */
+  .card-3d-float {
+    animation: card3dFloat 6s ease infinite;
+    transform-style: preserve-3d;
+  }
+  @keyframes card3dFloat {
+    0%,100% { transform: perspective(800px) translateZ(0px) rotateX(0deg) rotateY(0deg); }
+    25%     { transform: perspective(800px) translateZ(8px) rotateX(1deg) rotateY(-2deg); }
+    50%     { transform: perspective(800px) translateZ(12px) rotateX(-1deg) rotateY(2deg); }
+    75%     { transform: perspective(800px) translateZ(6px) rotateX(2deg) rotateY(-1deg); }
+  }
+
+  /* ── 3D ROTATE IN ANIMATION ── */
+  @keyframes rotateIn3D {
+    from { transform: perspective(800px) rotateY(-30deg) rotateX(10deg) translateZ(-40px); opacity: 0; }
+    to   { transform: perspective(800px) rotateY(0deg) rotateX(0deg) translateZ(0); opacity: 1; }
+  }
+  .rotate-in-3d { animation: rotateIn3D 0.5s cubic-bezier(.34,1.56,.64,1) both; }
+
+  /* ── 3D NEON BORDER ROTATE ── */
+  .border-3d-rotate {
+    position: relative;
+    overflow: hidden;
+  }
+  .border-3d-rotate::after {
+    content: '';
+    position: absolute;
+    inset: -50%;
+    background: conic-gradient(
+      from 0deg,
+      transparent 0deg,
+      rgba(129,140,248,0.5) 60deg,
+      rgba(34,211,238,0.6) 120deg,
+      rgba(168,85,247,0.5) 180deg,
+      transparent 240deg,
+      transparent 360deg
+    );
+    animation: borderRotate3D 4s linear infinite;
+    z-index: 0;
+  }
+  .border-3d-rotate > * { position: relative; z-index: 1; }
+  @keyframes borderRotate3D {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+
+  /* ── 3D HOLOGRAM FLICKER ── */
+  @keyframes holoFlicker {
+    0%,97%,100% { opacity: 1; transform: none; }
+    98% { opacity: 0.7; transform: skewX(0.5deg) translateX(1px); }
+    99% { opacity: 0.9; transform: skewX(-0.3deg); }
+  }
+  .holo-flicker { animation: holoFlicker 8s ease infinite; }
+
+  /* ── 3D DEPTH LAYERS ── */
+  .depth-layer-1 { transform: translateZ(4px);  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.4)); }
+  .depth-layer-2 { transform: translateZ(8px);  filter: drop-shadow(0 8px 16px rgba(0,0,0,0.5)); }
+  .depth-layer-3 { transform: translateZ(16px); filter: drop-shadow(0 12px 24px rgba(0,0,0,0.6)); }
+
+  /* ── 3D CONCEPT ROW SLIDE ── */
+  @keyframes conceptSlide3D {
+    from { transform: perspective(400px) translateZ(-20px) translateX(-8px); opacity: 0; }
+    to   { transform: perspective(400px) translateZ(0) translateX(0); opacity: 1; }
+  }
+  .concept-slide-3d { animation: conceptSlide3D 0.3s ease both; }
+
+  /* ── 3D PROGRESS BAR RAISE ── */
+  .progress-bar-3d {
+    transform: perspective(200px) rotateX(8deg);
+    box-shadow: 0 4px 0 rgba(0,0,0,0.4), 0 8px 16px rgba(0,0,0,0.3);
+  }
+
+  /* ── 3D JOURNAL CARD ── */
+  .journal-3d-card {
+    transform-style: preserve-3d;
+    transition: all 0.35s cubic-bezier(.25,.46,.45,.94);
+    position: relative;
+  }
+  .journal-3d-card:hover {
+    transform: perspective(600px) rotateX(-4deg) translateY(-6px) translateZ(12px);
+    box-shadow: 0 24px 60px rgba(0,0,0,0.7), 0 0 30px rgba(212,175,55,0.2) !important;
+  }
+
+  /* ── 3D CHAPTER CHAPTER CARD ── */
+  .chapter-3d {
+    transform-style: preserve-3d;
+    transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .chapter-3d:hover {
+    transform: perspective(500px) rotateY(-4deg) rotateX(2deg) translateZ(10px) translateY(-3px);
+  }
+
+  /* ── 3D SPINNING PARTICLE HALO ── */
+  @keyframes halo3DCW  { from { transform: rotateX(70deg) rotateZ(0deg); } to { transform: rotateX(70deg) rotateZ(360deg); } }
+  @keyframes halo3DCCW { from { transform: rotateX(70deg) rotateZ(0deg); } to { transform: rotateX(70deg) rotateZ(-360deg); } }
+  .halo-3d-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(129,140,248,0.3);
+    top: 50%; left: 50%;
+    transform-origin: center;
+    animation: halo3DCW 8s linear infinite;
+    pointer-events: none;
+  }
+  .halo-3d-ring.ccw { animation: halo3DCCW 10s linear infinite; }
+
+  /* ── 3D NEON GRID PULSE ── */
+  @keyframes neonGridPulse {
+    0%,100% { opacity: 0.04; }
+    50% { opacity: 0.08; }
+  }
+  .neon-grid-3d {
+    background-image:
+      linear-gradient(rgba(99,102,241,0.8) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99,102,241,0.8) 1px, transparent 1px);
+    background-size: 32px 32px;
+    animation: neonGridPulse 4s ease infinite;
+  }
+
+  /* ── 3D SUBJECT BACK HEADER ── */
+  @keyframes subjectHeader3D {
+    0%,100% { transform: perspective(1000px) rotateX(0deg); }
+    50%     { transform: perspective(1000px) rotateX(1deg); }
+  }
+  .subject-header-3d { animation: subjectHeader3D 8s ease infinite; transform-style: preserve-3d; }
+
+  /* ── 3D GLOW PULSE BORDER ── */
+  @keyframes glowBorder3D {
+    0%,100% { box-shadow: 0 0 0 0 rgba(99,102,241,0), inset 0 0 0 0 rgba(99,102,241,0); }
+    50% { box-shadow: 0 0 30px 4px rgba(99,102,241,0.3), inset 0 0 20px 2px rgba(99,102,241,0.05); }
+  }
+  .glow-border-3d { animation: glowBorder3D 3s ease infinite; }
+
+  /* ── 3D CORNER CHROME SHINE ── */
+  .chrome-3d {
+    position: relative;
+  }
+  .chrome-3d::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 40%;
+    background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, transparent 100%);
+    border-radius: inherit;
+    pointer-events: none;
+  }
+
+  /* ── 3D WAVE TEXT ── */
+  @keyframes waveText3D {
+    0%,100% { transform: perspective(200px) rotateX(0deg) translateZ(0); }
+    50%     { transform: perspective(200px) rotateX(6deg) translateZ(4px); }
+  }
+  .wave-text-3d { animation: waveText3D 5s ease infinite; display: inline-block; }
+
+  /* ── 3D ORBIT HALO WIDGET ── */
+  @keyframes orbitHalo3D {
+    from { transform: translate(-50%,-50%) rotateX(65deg) rotateZ(0deg); }
+    to   { transform: translate(-50%,-50%) rotateX(65deg) rotateZ(360deg); }
+  }
+  @keyframes orbitHalo3DCCW {
+    from { transform: translate(-50%,-50%) rotateX(65deg) rotateZ(0deg); }
+    to   { transform: translate(-50%,-50%) rotateX(65deg) rotateZ(-360deg); }
+  }
+
+  /* ── 3D JOURNAL CALENDAR DAY ── */
+  .cal-day-3d {
+    transition: all 0.2s cubic-bezier(.34,1.56,.64,1);
+  }
+  .cal-day-3d:hover {
+    transform: perspective(200px) translateZ(8px) scale(1.15);
+    z-index: 10;
+  }
+  .cal-day-3d:active {
+    transform: perspective(200px) translateZ(2px) scale(0.95);
+  }
+
+  /* ── 3D PROGRESS RING ── */
+  @keyframes progressRing3D {
+    0%   { transform: perspective(400px) rotateY(0deg) rotateX(15deg); }
+    100% { transform: perspective(400px) rotateY(360deg) rotateX(15deg); }
+  }
+
+  /* ── 3D STAT BAR RAISE ── */
+  @keyframes statRaise3D {
+    from { transform: perspective(300px) rotateX(90deg) scaleY(0); opacity: 0; }
+    to   { transform: perspective(300px) rotateX(0deg) scaleY(1); opacity: 1; }
+  }
+  .stat-raise-3d { animation: statRaise3D 0.6s cubic-bezier(.34,1.56,.64,1) both; }
+
+  /* ── 3D STUDY NEXT CARD ── */
+  .study-next-3d {
+    transform-style: preserve-3d;
+    transition: all 0.4s cubic-bezier(.25,.46,.45,.94);
+  }
+  .study-next-3d:hover {
+    transform: perspective(700px) rotateX(-3deg) translateY(-8px) translateZ(16px);
+  }
+
+  /* ── 3D CONCEPT STATUS BADGE ── */
+  @keyframes badgePop3D {
+    from { transform: perspective(100px) rotateY(-90deg) scale(0.5); opacity: 0; }
+    to   { transform: perspective(100px) rotateY(0deg) scale(1); opacity: 1; }
+  }
+  .badge-pop-3d { animation: badgePop3D 0.35s cubic-bezier(.34,1.56,.64,1) both; }
+
+  /* ── 3D XP BAR ── */
+  .xp-bar-3d {
+    transform: perspective(150px) rotateX(12deg);
+    box-shadow: 0 6px 0 rgba(0,0,0,0.5), 0 10px 20px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1);
+  }
+
+  /* ── 3D MINDMAP NODE ── */
+  .mindmap-node-3d {
+    transform-style: preserve-3d;
+    transition: all 0.3s cubic-bezier(.34,1.56,.64,1);
+  }
+  .mindmap-node-3d:hover {
+    transform: perspective(400px) translateZ(12px) scale(1.08);
+    z-index: 10;
+  }
+
+  /* ── 3D BACK-PAGE SECTION HEADER ── */
+  @keyframes sectionHeader3D {
+    from { transform: perspective(500px) rotateX(-20deg) translateY(-10px); opacity: 0; }
+    to   { transform: perspective(500px) rotateX(0deg) translateY(0); opacity: 1; }
+  }
+  .section-header-3d { animation: sectionHeader3D 0.5s cubic-bezier(.34,1.56,.64,1) both; }
+
+  /* ── 3D SUBTOPIC ACCORDION ── */
+  .subtopic-3d {
+    transform-style: preserve-3d;
+    transition: all 0.25s ease;
+  }
+  .subtopic-3d:hover {
+    transform: perspective(300px) translateZ(6px) translateX(3px);
+  }
+
+  /* ── HOLOGRAPHIC LINES ── */
+  @keyframes holoLine {
+    0%   { transform: translateX(-100%) skewX(-15deg); opacity: 0; }
+    50%  { opacity: 0.8; }
+    100% { transform: translateX(300%) skewX(-15deg); opacity: 0; }
+  }
+  .holo-line {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 30%;
+    background: linear-gradient(90deg, transparent, rgba(34,211,238,0.08), rgba(129,140,248,0.12), transparent);
+    animation: holoLine 5s ease infinite;
+    pointer-events: none;
+  }
+  .holo-line:nth-child(2) { animation-delay: 1.8s; width: 20%; }
+  .holo-line:nth-child(3) { animation-delay: 3.5s; width: 15%; }
+
+  /* ── 3D TILT ON MOUSE APPROACH ── */
+  .tilt-approach {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    transform-style: preserve-3d;
+  }
 `;
 
-// ── BEAUTIFUL FORMULA RENDERER ──────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════════════
+// AFTER EFFECTS COMPONENTS
+// ══════════════════════════════════════════════════════════════════════
+
+// ── AE: SVG Filter Definitions (Turbulent Displace, Glow, Fractal Noise) ──
+function AESVGFilters() {
+  return (
+    <svg style={{position:'fixed',width:0,height:0,pointerEvents:'none',overflow:'hidden'}} aria-hidden="true">
+      <defs>
+        {/* Turbulent Displace — warps borders & glows */}
+        <filter id="ae-turbulent" x="-10%" y="-10%" width="120%" height="120%">
+          <feTurbulence type="turbulence" baseFrequency="0.012 0.008" numOctaves="3" seed="3" result="noise">
+            <animate attributeName="baseFrequency" values="0.012 0.008;0.018 0.013;0.012 0.008" dur="10s" repeatCount="indefinite"/>
+            <animate attributeName="seed" values="3;7;12;3" dur="18s" repeatCount="indefinite"/>
+          </feTurbulence>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+        </filter>
+
+        {/* Fractal Noise overlay filter */}
+        <filter id="ae-fractal-noise" x="0%" y="0%" width="100%" height="100%">
+          <feTurbulence type="fractalNoise" baseFrequency="0.72 0.52" numOctaves="4" stitchTiles="stitch" result="noise">
+            <animate attributeName="baseFrequency" values="0.72 0.52;0.78 0.58;0.72 0.52" dur="20s" repeatCount="indefinite"/>
+            <animate attributeName="seed" values="0;4;8;12;0" dur="40s" repeatCount="indefinite"/>
+          </feTurbulence>
+          <feColorMatrix type="saturate" values="0" result="grayNoise"/>
+          <feBlend in="SourceGraphic" in2="grayNoise" mode="screen"/>
+        </filter>
+
+        {/* Bloom/Glow filter */}
+        <filter id="ae-bloom" x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="3.5" result="blur"/>
+          <feColorMatrix type="matrix"
+            values="0.3 0 0 0 0.32
+                    0   0.35 0 0 0.35
+                    0   0 0.5 0 0.55
+                    0   0 0   1 0"
+            in="blur" result="coloredBlur"/>
+          <feMerge>
+            <feMergeNode in="coloredBlur"/>
+            <feMergeNode in="SourceGraphic"/>
+          </feMerge>
+        </filter>
+      </defs>
+    </svg>
+  );
+}
+
+// ── AE: CC Particle World — 3D depth canvas with Glow + Echo trails ──
+function ParticleWorldCanvas() {
+  const canvasRef = React.useRef(null);
+  const animRef = React.useRef(null);
+
+  React.useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    const resize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+    resize();
+    window.addEventListener('resize', resize);
+
+    // CC Particle World: 3D depth particles
+    const COUNT = 60;
+    const HUES = [248, 192, 272, 215, 260]; // violet, cyan, purple, sky, indigo
+    const particles = Array.from({length: COUNT}, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      z: Math.random(),                          // depth: 0=far, 1=near
+      vx: (Math.random() - 0.5) * 0.25,
+      vy: (Math.random() - 0.5) * 0.25,
+      vz: (Math.random() - 0.5) * 0.0015,
+      baseR: Math.random() * 1.2 + 0.4,
+      hue: HUES[Math.floor(Math.random() * HUES.length)],
+      phase: Math.random() * Math.PI * 2,
+      phaseSpeed: 0.004 + Math.random() * 0.006,
+      trail: [],                                 // Echo effect
+    }));
+
+    const drawFrame = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      for (const p of particles) {
+        p.phase += p.phaseSpeed;
+
+        // Turbulent Displace: organic sinusoidal drift
+        const wx = Math.sin(p.phase * 1.1 + p.y * 0.0025) * 0.5;
+        const wy = Math.cos(p.phase * 0.8 + p.x * 0.0025) * 0.5;
+        p.x += p.vx + wx;
+        p.y += p.vy + wy;
+        p.z = Math.max(0.02, Math.min(0.97, p.z + p.vz));
+
+        // Wrap (Motion Tile)
+        if (p.x < -20) p.x = canvas.width + 20;
+        if (p.x > canvas.width + 20) p.x = -20;
+        if (p.y < -20) p.y = canvas.height + 20;
+        if (p.y > canvas.height + 20) p.y = -20;
+
+        // Echo trail storage
+        p.trail.push({x: p.x, y: p.y, z: p.z});
+        if (p.trail.length > 6) p.trail.shift();
+
+        const depth = p.z;
+        const r = p.baseR * (0.4 + depth * 1.8);      // larger = nearer
+        const alpha = 0.06 + depth * 0.38;
+        const pulse = 0.88 + Math.sin(p.phase) * 0.12; // Glow pulse
+
+        // ── Echo trail (AE Echo effect) ──
+        for (let i = 0; i < p.trail.length - 1; i++) {
+          const tp = p.trail[i];
+          const tRatio = i / p.trail.length;
+          const tAlpha = alpha * tRatio * 0.35;
+          const tR = r * tRatio * 0.55;
+          if (tR < 0.1) continue;
+          ctx.beginPath();
+          ctx.arc(tp.x, tp.y, tR, 0, Math.PI * 2);
+          ctx.fillStyle = `hsla(${p.hue},80%,72%,${tAlpha})`;
+          ctx.fill();
+        }
+
+        // ── Glow halo (AE Glow effect) ──
+        const glowR = r * 5.5 * pulse;
+        const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+        grd.addColorStop(0,   `hsla(${p.hue},85%,75%,${alpha * 0.75})`);
+        grd.addColorStop(0.35,`hsla(${p.hue},80%,65%,${alpha * 0.25})`);
+        grd.addColorStop(1,   `hsla(${p.hue},80%,65%,0)`);
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+        ctx.fillStyle = grd;
+        ctx.fill();
+
+        // ── Core particle (CC Particle World core dot) ──
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, r * pulse, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue},92%,88%,${Math.min(1, alpha * 1.3)})`;
+        ctx.fill();
+      }
+
+      animRef.current = requestAnimationFrame(drawFrame);
+    };
+    drawFrame();
+
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="ae-particle-canvas"
+      style={{opacity: 0.9}}
+    />
+  );
+}
+
+// ── AE: Fractal Noise SVG overlay ──
+function FractalNoiseOverlay() {
+  return (
+    <svg
+      style={{
+        position:'fixed', inset:0,
+        width:'100%', height:'100%',
+        pointerEvents:'none', zIndex:0,
+        opacity: 0.038,
+        mixBlendMode:'screen',
+      }}
+      preserveAspectRatio="xMidYMid slice"
+      aria-hidden="true"
+    >
+      <filter id="fn-overlay">
+        <feTurbulence type="fractalNoise" baseFrequency="0.68 0.5" numOctaves="4" stitchTiles="stitch">
+          <animate attributeName="baseFrequency" values="0.68 0.5;0.74 0.56;0.68 0.5" dur="18s" repeatCount="indefinite"/>
+          <animate attributeName="seed" values="1;6;11;16;1" dur="35s" repeatCount="indefinite"/>
+        </feTurbulence>
+        <feColorMatrix type="saturate" values="0"/>
+      </filter>
+      <rect width="100%" height="100%" filter="url(#fn-overlay)" fill="rgba(99,102,241,0.9)"/>
+    </svg>
+  );
+}
+
+// ── AE: Beautiful Aurora that shifts with turbulence ──
+function TurbulentAurora() {
+  return (
+    <>
+      {/* Top-right aurora — turbulent displace applied */}
+      <div style={{
+        position:'fixed', top:-140, right:-100,
+        width:480, height:480, borderRadius:'50%',
+        background:'radial-gradient(circle, rgba(99,102,241,0.18) 0%, rgba(79,70,229,0.09) 40%, transparent 70%)',
+        pointerEvents:'none', zIndex:0,
+        filter:'url(#ae-turbulent)',
+        animation:'orbitPulse 7s ease infinite',
+      }}/>
+      {/* Bottom-left aurora */}
+      <div style={{
+        position:'fixed', bottom:-120, left:-80,
+        width:340, height:340, borderRadius:'50%',
+        background:'radial-gradient(circle, rgba(34,211,238,0.12) 0%, rgba(6,182,212,0.06) 40%, transparent 70%)',
+        pointerEvents:'none', zIndex:0,
+        filter:'url(#ae-turbulent)',
+        animation:'orbitPulse 9s ease 2s infinite',
+      }}/>
+      {/* Centre deep glow */}
+      <div style={{
+        position:'fixed', top:'40%', left:'50%', transform:'translate(-50%,-50%)',
+        width:500, height:300, borderRadius:'50%',
+        background:'radial-gradient(ellipse, rgba(79,70,229,0.04) 0%, transparent 70%)',
+        pointerEvents:'none', zIndex:0,
+        animation:'auroraShift 12s ease infinite',
+        backgroundSize:'200% 200%',
+      }}/>
+    </>
+  );
+}
+
+// ── AE: BEAUTIFUL FORMULA RENDERER ──────────────────────────────────────────
 // Converts plain-text formulas to gorgeous, human-readable JSX
 // Handles: ^sup, _sub, auto-chemical subscripts, Greek letters, arrows, charges
 
@@ -553,24 +1313,24 @@ function SmartFormula({ text, subKey, style = {} }) {
 
 // ── THEME ──────────────────────────────────────────────────────────────
 const C = {
-  bg:"#f4f2fb",
-  surface:"#ffffff",
-  card:"#ffffff",
-  border:"rgba(109,40,217,0.09)",
-  borderMed:"rgba(109,40,217,0.16)",
-  hover:"#f5f0fe",
-  text:"#0d0a2e",
-  subtext:"#5f5b78",
-  dim:"#9b98b0",
-  accent:"#7c3aed",
-  accentH:"#6d28d9",
-  accentSoft:"#ede9fe",
+  bg:"#080c1e",
+  surface:"rgba(12,16,40,0.95)",
+  card:"rgba(10,14,36,0.92)",
+  border:"rgba(99,102,241,0.15)",
+  borderMed:"rgba(129,140,248,0.28)",
+  hover:"rgba(99,102,241,0.08)",
+  text:"#ddd9f5",
+  subtext:"rgba(180,176,210,0.65)",
+  dim:"rgba(140,138,168,0.55)",
+  accent:"#818cf8",
+  accentH:"#a5b4fc",
+  accentSoft:"rgba(99,102,241,0.12)",
   navy:"#0d0a2e",
   navyMid:"#1e1b4b",
-  green:"#059669",  greenBg:"rgba(5,150,105,0.1)",
-  gold:"#d97706",   goldBg:"rgba(217,119,6,0.1)",
-  red:"#dc2626",    redBg:"rgba(220,38,38,0.09)",
-  orange:"#ea580c", orangeBg:"rgba(234,88,12,0.09)",
+  green:"#34d399",  greenBg:"rgba(52,211,153,0.12)",
+  gold:"#fbbf24",   goldBg:"rgba(251,191,36,0.12)",
+  red:"#f87171",    redBg:"rgba(248,113,113,0.10)",
+  orange:"#fb923c", orangeBg:"rgba(251,146,60,0.10)",
 };
 const SUB={
   math:   {label:"Mathematics", short:"MATH", icon:"∑",  col:"#7c3aed", bg:"rgba(124,58,237,.1)",  light:"#ede9fe", grd:"linear-gradient(135deg,#7c3aed,#a855f7)"},
@@ -2761,7 +3521,7 @@ function SyllabusTab({chap,ts,setTs,col}){
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:13,fontWeight:700,color:C.text,lineHeight:1.3}}>{topic.topic}</div>
                 <div style={{display:"flex",alignItems:"center",gap:8,marginTop:4}}>
-                  <div style={{width:70,height:4,background:"#ede9fe",borderRadius:4,overflow:"hidden"}}>
+                  <div style={{width:70,height:4,background:"rgba(99,102,241,0.12)",borderRadius:4,overflow:"hidden"}}>
                     <div style={{height:"100%",width:`${tPct}%`,background:allDone?"#059669":col,borderRadius:4,transition:"width .4s"}}/>
                   </div>
                   <span style={{fontSize:9,color:allDone?"#059669":col,fontWeight:700}}>{tp.done}/{tp.total}</span>
@@ -2876,16 +3636,18 @@ function ChapterCard({chap,ts,setTs}){
 
   return(
     <div style={{
-      background:"#ffffff",
+      background:"rgba(10,14,36,0.92)",
       borderRadius:18,
       border:`1px solid ${C.border}`,
-      borderLeft:`4px solid ${isComplete?"#059669":sub.col}`,
+      borderLeft:`4px solid ${isComplete?"#34d399":sub.col}`,
       overflow:"hidden",
-      boxShadow:open?`0 4px 24px ${sub.col}18, 0 1px 0 rgba(0,0,0,0.04)`:"0 2px 10px rgba(13,10,46,.06)",
+      boxShadow:open?`0 4px 28px ${sub.col}28, 0 0 0 1px ${sub.col}20`:"0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)",
       transition:"box-shadow .25s, transform .25s",
+      backdropFilter:"blur(12px)",
+      WebkitBackdropFilter:"blur(12px)",
     }}
-    onMouseEnter={e=>{if(!open){e.currentTarget.style.boxShadow=`0 6px 24px ${sub.col}20`;e.currentTarget.style.transform="translateY(-2px)";}}}
-    onMouseLeave={e=>{if(!open){e.currentTarget.style.boxShadow="0 2px 10px rgba(13,10,46,.06)";e.currentTarget.style.transform="none";}}}>
+    onMouseEnter={e=>{if(!open){e.currentTarget.style.boxShadow=`0 8px 32px ${sub.col}30`;e.currentTarget.style.transform="translateY(-2px)";}}}
+    onMouseLeave={e=>{if(!open){e.currentTarget.style.boxShadow="0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)";e.currentTarget.style.transform="none";}}}>
 
       {/* Card Header */}
       <div onClick={()=>setOpen(o=>!o)} style={{padding:"14px 16px",cursor:"pointer",display:"flex",alignItems:"center",gap:12}}>
@@ -2899,12 +3661,12 @@ function ChapterCard({chap,ts,setTs}){
           <div style={{display:"flex",alignItems:"center",gap:6,flexWrap:"wrap",marginBottom:5}}>
             <span style={{fontSize:13.5,fontWeight:700,fontFamily:"'Lora',serif",color:C.text,letterSpacing:-0.2}}>{chap.name}</span>
             <span style={{fontSize:8.5,fontWeight:700,fontFamily:"'Josefin Sans',sans-serif",color:wtCol,background:wtBg,padding:"2px 7px",borderRadius:5,letterSpacing:0.8}}>{chap.weight.toUpperCase()}</span>
-            <span style={{fontSize:8.5,color:C.subtext,background:"#f4f2fb",padding:"2px 6px",borderRadius:5,fontFamily:"'Josefin Sans'"}}>~{chap.est}h</span>
+            <span style={{fontSize:8.5,color:C.subtext,background:"rgba(99,102,241,0.1)",padding:"2px 6px",borderRadius:5,fontFamily:"'Josefin Sans'"}}>~{chap.est}h</span>
             {isComplete&&<span style={{fontSize:8.5,fontWeight:700,fontFamily:"'Josefin Sans'",color:"#059669",background:"rgba(5,150,105,.1)",padding:"2px 8px",borderRadius:5,letterSpacing:0.5}}>✓ DONE</span>}
           </div>
           {/* Progress Bar */}
           <div style={{display:"flex",alignItems:"center",gap:8}}>
-            <div style={{flex:1,height:5,background:"#ede9fe",borderRadius:5,overflow:"hidden"}}>
+            <div style={{flex:1,height:5,background:"rgba(99,102,241,0.12)",borderRadius:5,overflow:"hidden"}}>
               <div style={{height:"100%",width:`${prog.pct}%`,
                 background:isComplete?"linear-gradient(90deg,#059669,#34d399)":`linear-gradient(90deg,${sub.col},${sub.col}80)`,
                 borderRadius:5,transition:"width .5s ease",
@@ -2923,7 +3685,7 @@ function ChapterCard({chap,ts,setTs}){
         <div style={{borderTop:`1px solid ${C.border}`,animation:"fadeSlideUp .18s ease"}}>
           <QuickActions/>
           {/* Tabs */}
-          <div style={{display:"flex",gap:0,padding:"8px 14px 0",overflowX:"auto",borderBottom:`1px solid ${C.border}`,background:"#fafafe"}}>
+          <div style={{display:"flex",gap:0,padding:"8px 14px 0",overflowX:"auto",borderBottom:`1px solid ${C.border}`,background:"rgba(6,9,22,0.97)"}}>
             {tabs.map(t=>(
               <button key={t.k} onClick={()=>setTab(t.k)}
                 style={{padding:"7px 14px",borderRadius:0,border:"none",cursor:"pointer",fontSize:11,
@@ -2961,23 +3723,239 @@ function ChapterCard({chap,ts,setTs}){
 }
 
 // ── PROGRESS VIEW — Sakura Theme ─────────────────────────────────────
+// ── PROGRESS PAGE: HOLOGRAPHIC MISSION CONTROL THEME ──
 const SK={
-  bg:"linear-gradient(160deg,#FFF5FA 0%,#FFE8F4 50%,#FDD5EC 100%)",
-  card:"linear-gradient(155deg,rgba(255,255,255,0.96),rgba(255,228,244,0.93))",
-  border:"rgba(236,72,153,0.18)",
-  borderMed:"rgba(236,72,153,0.32)",
-  accent:"#EC4899",
-  accentSoft:"rgba(236,72,153,0.1)",
-  text:"#831843",
-  subtext:"#9D174D",
-  dim:"rgba(157,23,77,0.5)",
-  shadow:"0 4px 20px rgba(236,72,153,0.12)",
-  shadowMed:"0 8px 32px rgba(236,72,153,0.18)",
-  masteredCol:"#BE185D",
-  practicedCol:"#7C3AED",
-  learningCol:"#EA580C",
-  progressBar:"linear-gradient(90deg,#EC4899,#F472B6,#FBA4C7)",
+  bg:"#050812",
+  card:"rgba(8,12,32,0.92)",
+  cardAlt:"rgba(12,16,42,0.88)",
+  border:"rgba(99,102,241,0.22)",
+  borderBright:"rgba(129,140,248,0.45)",
+  accent:"#818cf8",
+  accentCyan:"#22d3ee",
+  accentGold:"#f59e0b",
+  accentRose:"#f472b6",
+  accentEmerald:"#10b981",
+  text:"#e2e8f0",
+  subtext:"rgba(199,210,254,0.8)",
+  dim:"rgba(129,140,248,0.4)",
+  masteredCol:"#a78bfa",
+  practicedCol:"#22d3ee",
+  learningCol:"#fb923c",
+  untouchedCol:"rgba(99,102,241,0.18)",
+  progressBar:"linear-gradient(90deg,#4f46e5,#818cf8,#22d3ee)",
+  shadow:"0 8px 40px rgba(0,0,0,0.7)",
+  shadowGlow:"0 0 40px rgba(99,102,241,0.18)",
 };
+
+// ── ORBITING RING DECORATION for 3D donut ──
+function OrbitRing({size,color,delay=0,duration=8,ccw=false}){
+  const id=`orb-${Math.random().toString(36).slice(2,7)}`;
+  return(
+    <div style={{
+      position:"absolute",
+      width:size,height:size,
+      borderRadius:"50%",
+      border:`1px solid ${color}`,
+      top:"50%",left:"50%",
+      transform:"translate(-50%,-50%) rotateX(72deg)",
+      animation:`${ccw?"orbitCCW":"orbitCW"} ${duration}s linear ${delay}s infinite`,
+      pointerEvents:"none",
+      boxShadow:`0 0 8px ${color}, inset 0 0 8px ${color}`,
+    }}/>
+  );
+}
+
+// ── HOLOGRAPHIC 3D DONUT WRAPPER ──
+function Donut3D({data,size,strokeWidth,centerText,centerSub,colors}){
+  return(
+    <div style={{
+      position:"relative",
+      display:"inline-flex",alignItems:"center",justifyContent:"center",
+      filter:"drop-shadow(0 0 18px rgba(99,102,241,0.4))",
+    }}>
+      {/* 3D orbit rings */}
+      <OrbitRing size={size+28} color="rgba(129,140,248,0.25)" delay={0} duration={10}/>
+      <OrbitRing size={size+48} color="rgba(34,211,238,0.18)" delay={-3} duration={15} ccw/>
+      <OrbitRing size={size+14} color="rgba(167,139,250,0.35)" delay={-1} duration={7}/>
+      <DonutChart data={data} size={size} strokeWidth={strokeWidth} centerText={centerText} centerSub={centerSub}/>
+    </div>
+  );
+}
+
+// ── PROGRESS STAT COUNTER (animated number) ──
+function StatCounter({val,col,label,icon,delay=0}){
+  const [disp,setDisp]=useState(0);
+  useEffect(()=>{
+    const t=setTimeout(()=>{
+      const dur=900,steps=40,inc=val/steps;
+      let i=0;
+      const iv=setInterval(()=>{
+        i++;setDisp(Math.min(Math.round(inc*i),val));
+        if(i>=steps)clearInterval(iv);
+      },dur/steps);
+      return()=>clearInterval(iv);
+    },delay);
+    return()=>clearTimeout(t);
+  },[val,delay]);
+  return(
+    <div style={{
+      position:"relative",
+      background:"rgba(8,12,32,0.92)",
+      borderRadius:18,
+      padding:"14px 12px 12px",
+      border:`1px solid ${col}35`,
+      backdropFilter:"blur(20px)",
+      boxShadow:`0 8px 32px rgba(0,0,0,0.6), 0 0 30px ${col}15, inset 0 1px 0 ${col}20`,
+      overflow:"hidden",
+      animation:`fadeSlideUp .5s ease ${delay/1000}s both`,
+      transition:"transform .2s ease, box-shadow .2s ease",
+    }}>
+      {/* Corner glow */}
+      <div style={{position:"absolute",top:-20,right:-20,width:60,height:60,borderRadius:"50%",
+        background:`radial-gradient(circle,${col}25,transparent 70%)`,pointerEvents:"none"}}/>
+      {/* Shimmer bar */}
+      <div style={{position:"absolute",top:0,left:0,right:0,height:1,
+        background:`linear-gradient(90deg,transparent,${col}80,transparent)`,
+        animation:"shimmer 3s ease infinite"}}/>
+      <div style={{fontSize:17,marginBottom:6,filter:`drop-shadow(0 0 6px ${col})`}}>{icon}</div>
+      <div style={{
+        fontFamily:"'Bebas Neue',sans-serif",
+        fontSize:30,lineHeight:1,
+        color:col,letterSpacing:1,
+        textShadow:`0 0 20px ${col}80, 0 0 40px ${col}40`,
+      }}>{disp}</div>
+      <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+        letterSpacing:1.5,color:`${col}80`,marginTop:4,textTransform:"uppercase"}}>{label}</div>
+    </div>
+  );
+}
+
+// ── CHAPTER PROGRESS ROW ──
+function ChapRow({c,p,sub,idx}){
+  const [entered,setEntered]=useState(false);
+  useEffect(()=>{const t=setTimeout(()=>setEntered(true),idx*40+200);return()=>clearTimeout(t);},[idx]);
+  const colMap={math:"#818cf8",physics:"#fb923c",chemistry:"#10b981"};
+  const col=colMap[c.sub]||"#818cf8";
+  return(
+    <div style={{
+      display:"flex",alignItems:"center",gap:10,
+      padding:"9px 12px",marginBottom:5,
+      borderRadius:12,
+      background:entered?"rgba(12,16,40,0.7)":"transparent",
+      border:`1px solid ${entered?col+"22":"transparent"}`,
+      transition:"all .4s ease",
+      position:"relative",overflow:"hidden",
+    }}>
+      {/* left accent bar */}
+      <div style={{position:"absolute",left:0,top:"20%",bottom:"20%",width:2,
+        background:col,borderRadius:2,
+        boxShadow:`0 0 8px ${col}`,opacity:entered?1:0,transition:"opacity .4s"}}/>
+      <span style={{fontSize:13,width:20,textAlign:"center",flexShrink:0,filter:`drop-shadow(0 0 4px ${col})`}}>{sub.icon}</span>
+      <span style={{flex:1,fontSize:11,color:"rgba(199,210,254,0.8)",minWidth:0,overflow:"hidden",
+        textOverflow:"ellipsis",whiteSpace:"nowrap",fontFamily:"'Lora',serif",fontStyle:"italic"}}>{c.name}</span>
+      {/* Neon progress bar */}
+      <div style={{width:72,height:4,background:"rgba(99,102,241,0.12)",borderRadius:2,overflow:"visible",flexShrink:0,position:"relative"}}>
+        <div style={{
+          position:"absolute",top:0,left:0,height:"100%",
+          width:entered?`${p.pct}%`:"0%",
+          background:`linear-gradient(90deg,${col},${col}cc)`,
+          borderRadius:2,
+          transition:"width 1s cubic-bezier(.4,0,.2,1)",
+          boxShadow:`0 0 8px ${col}, 0 0 16px ${col}60`,
+        }}/>
+        {/* Glowing tip */}
+        {p.pct>0&&<div style={{
+          position:"absolute",top:-2,
+          left:entered?`calc(${p.pct}% - 3px)`:"0%",
+          width:6,height:8,
+          background:col,
+          borderRadius:"50%",
+          boxShadow:`0 0 10px ${col}, 0 0 20px ${col}`,
+          transition:"left 1s cubic-bezier(.4,0,.2,1)",
+        }}/>}
+      </div>
+      <span style={{
+        fontSize:10,fontFamily:"'Cinzel',sans-serif",
+        color:col,fontWeight:700,
+        width:28,textAlign:"right",flexShrink:0,
+        textShadow:`0 0 8px ${col}`,
+      }}>{p.pct}%</span>
+    </div>
+  );
+}
+
+// ── SUBJECT MINI CARD ──
+function SubjectMiniCard({subKey,sub,ts}){
+  const chaps=CHAPS.filter(c=>c.sub===subKey);
+  const subProgs=chaps.map(c=>getProgress(c,ts));
+  const total=subProgs.reduce((a,p)=>a+p.total,0);
+  const mastered=subProgs.reduce((a,p)=>a+p.mastered,0);
+  const practiced=subProgs.reduce((a,p)=>a+p.practiced,0);
+  const learning=subProgs.reduce((a,p)=>a+p.learning,0);
+  const pct=total?Math.round(mastered/total*100):0;
+  const colMap={math:"#818cf8",physics:"#fb923c",chemistry:"#10b981"};
+  const col=colMap[subKey]||"#818cf8";
+  const subData=[
+    {value:mastered,color:col},
+    {value:practiced,color:`${col}88`},
+    {value:learning,color:`${col}44`},
+    {value:total-mastered-practiced-learning,color:"rgba(99,102,241,0.1)"},
+  ];
+  const [hov,setHov]=useState(false);
+  return(
+    <div
+      onMouseEnter={()=>setHov(true)}
+      onMouseLeave={()=>setHov(false)}
+      style={{
+        background:"rgba(8,12,32,0.92)",
+        borderRadius:18,padding:"16px 10px 14px",
+        border:`1px solid ${hov?col+"66":col+"25"}`,
+        textAlign:"center",backdropFilter:"blur(20px)",
+        boxShadow:hov
+          ?`0 20px 50px rgba(0,0,0,0.8),0 0 40px ${col}35,inset 0 1px 0 ${col}30, 0 0 0 1px ${col}20`
+          :`0 6px 24px rgba(0,0,0,0.5),inset 0 1px 0 ${col}12`,
+        transform:hov
+          ?"perspective(400px) rotateY(-6deg) rotateX(3deg) translateZ(20px) translateY(-6px) scale(1.04)"
+          :"perspective(400px) rotateY(0deg) rotateX(0deg) translateZ(0) translateY(0) scale(1)",
+        transition:"all .35s cubic-bezier(.34,1.56,.64,1)",
+        position:"relative",overflow:"hidden",
+        cursor:"default",
+        transformStyle:"preserve-3d",
+      }}>
+      {/* Top glow line */}
+      <div style={{position:"absolute",top:0,left:"10%",right:"10%",height:1,
+        background:`linear-gradient(90deg,transparent,${col},transparent)`,
+        opacity:hov?1:0.5,transition:"opacity .3s"}}/>
+      {/* 3D corner chrome */}
+      <div style={{position:"absolute",top:0,left:0,right:0,height:"40%",
+        background:"linear-gradient(180deg,rgba(255,255,255,0.04) 0%,transparent 100%)",
+        borderRadius:"18px 18px 0 0",pointerEvents:"none"}}/>
+      {hov&&<div className="holo-line" style={{opacity:0.5}}/>}
+      <div style={{fontSize:22,marginBottom:10,
+        filter:`drop-shadow(0 0 10px ${col})`,
+        transform:hov?"scale(1.15)":"scale(1)",
+        transition:"transform .3s ease"}}>{sub.icon}</div>
+      {/* 3D Mini Donut */}
+      <div style={{display:"flex",justifyContent:"center",
+        filter:`drop-shadow(0 0 12px ${col}60)`}}>
+        <DonutChart data={subData} size={70} strokeWidth={9} centerText={`${pct}%`}/>
+      </div>
+      <div style={{
+        fontSize:10,fontWeight:800,marginTop:10,letterSpacing:1,
+        fontFamily:"'Josefin Sans',sans-serif",
+        color:col,textShadow:`0 0 10px ${col}`,
+      }}>{sub.short}</div>
+      <div style={{fontSize:9,color:`${col}70`,marginTop:3,fontWeight:600,
+        fontFamily:"'Cinzel',sans-serif"}}>{mastered}/{total}</div>
+      {/* Progress arc indicator */}
+      <div style={{marginTop:8,height:2,background:"rgba(99,102,241,0.12)",borderRadius:1,overflow:"hidden"}}>
+        <div style={{height:"100%",width:`${pct}%`,
+          background:`linear-gradient(90deg,${col}80,${col})`,
+          borderRadius:1,boxShadow:`0 0 6px ${col}`}}/>
+      </div>
+    </div>
+  );
+}
 
 function ProgressView({ts}){
   const started=useMemo(()=>CHAPS.filter(c=>getProgress(c,ts).pct>0)
@@ -2989,170 +3967,273 @@ function ProgressView({ts}){
   const allLearning=allChapProgs.reduce((a,p)=>a+p.learning,0);
   const allUntouched=allTopics-allMastered-allPracticed-allLearning;
   const donutData=[
-    {label:"Mastered",  value:allMastered,  color:"#BE185D"},
-    {label:"Practiced", value:allPracticed, color:"#7C3AED"},
-    {label:"Learning",  value:allLearning,  color:"#EA580C"},
-    {label:"Not Started",value:allUntouched,color:"rgba(236,72,153,0.15)"},
+    {label:"Mastered",   value:allMastered,   color:"#a78bfa"},
+    {label:"Practiced",  value:allPracticed,  color:"#22d3ee"},
+    {label:"Learning",   value:allLearning,   color:"#fb923c"},
+    {label:"Not Started",value:allUntouched,  color:"rgba(99,102,241,0.15)"},
   ];
   const overallPct=allTopics?Math.round(allMastered/allTopics*100):0;
+  const [tilt,setTilt]=useState({x:0,y:0});
 
-  // Sakura petal decoration
-  const petals=["🌸","🌺","🌸","🌸","🌺","🌸"];
+  // Extra CSS injected for 3D orbit animations
+  useEffect(()=>{
+    const style=document.createElement("style");
+    style.id="progress-3d-css";
+    style.textContent=`
+      @keyframes orbitCW  { from{transform:translate(-50%,-50%) rotateX(72deg) rotateZ(0deg)}   to{transform:translate(-50%,-50%) rotateX(72deg) rotateZ(360deg)} }
+      @keyframes orbitCCW { from{transform:translate(-50%,-50%) rotateX(72deg) rotateZ(0deg)}   to{transform:translate(-50%,-50%) rotateX(72deg) rotateZ(-360deg)} }
+      @keyframes holo-scan { 0%{transform:translateY(-100%)} 100%{transform:translateY(400%)} }
+      @keyframes progress-bar-glow { 0%,100%{filter:brightness(1)} 50%{filter:brightness(1.4)} }
+      @keyframes ripple3d { 0%{transform:translate(-50%,-50%) scale(1);opacity:0.6} 100%{transform:translate(-50%,-50%) scale(3);opacity:0} }
+      @keyframes counterUp { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:translateY(0)} }
+      .prog-chap-row:hover { background:rgba(18,24,56,0.9) !important; }
+    `;
+    if(!document.getElementById("progress-3d-css"))document.head.appendChild(style);
+    return()=>{const el=document.getElementById("progress-3d-css");if(el)el.remove();};
+  },[]);
+
+  const handleHeroMove=(e)=>{
+    const r=e.currentTarget.getBoundingClientRect();
+    const x=((e.clientX-r.left)/r.width-0.5)*12;
+    const y=((e.clientY-r.top)/r.height-0.5)*-8;
+    setTilt({x,y});
+  };
+  const handleHeroLeave=()=>setTilt({x:0,y:0});
 
   return(
     <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",
-      background:SK.bg, position:"relative"}}>
+      background:"#050812",position:"relative"}}>
 
-      {/* Sakura header banner */}
-      <div style={{
-        background:"linear-gradient(135deg,#9D174D 0%,#BE185D 45%,#EC4899 100%)",
-        padding:"20px 18px 24px",position:"relative",overflow:"hidden",flexShrink:0,
-        boxShadow:"0 4px 24px rgba(157,23,77,0.3)",
-      }}>
-        {/* Decorative petals */}
-        <div style={{position:"absolute",top:-20,right:-20,width:120,height:120,borderRadius:"50%",
-          background:"rgba(255,255,255,0.08)",pointerEvents:"none"}}/>
-        <div style={{position:"absolute",bottom:-30,left:-15,width:90,height:90,borderRadius:"50%",
-          background:"rgba(255,255,255,0.06)",pointerEvents:"none"}}/>
-        <div style={{position:"absolute",top:10,right:14,fontSize:28,opacity:0.35,
-          animation:"float 4s ease infinite",pointerEvents:"none"}}>🌸</div>
-        <div style={{position:"absolute",bottom:10,left:20,fontSize:20,opacity:0.28,
-          animation:"float 5s ease 1s infinite",pointerEvents:"none"}}>🌺</div>
+      {/* ══ HOLOGRAPHIC HERO HEADER ══ */}
+      <div
+        onMouseMove={handleHeroMove}
+        onMouseLeave={handleHeroLeave}
+        style={{
+          background:"linear-gradient(135deg,#06081a 0%,#0e1235 50%,#060a20 100%)",
+          padding:"22px 18px 20px",position:"relative",overflow:"hidden",flexShrink:0,
+          borderBottom:"1px solid rgba(99,102,241,0.25)",
+          boxShadow:"0 4px 40px rgba(0,0,0,0.8), 0 0 80px rgba(79,70,229,0.08)",
+          perspective:600,
+          cursor:"default",
+        }}>
+        {/* Holographic grid lines */}
+        <div style={{position:"absolute",inset:0,
+          backgroundImage:"linear-gradient(rgba(99,102,241,0.06) 1px,transparent 1px),linear-gradient(90deg,rgba(99,102,241,0.06) 1px,transparent 1px)",
+          backgroundSize:"28px 28px",pointerEvents:"none"}}/>
+        {/* Top neon edge */}
+        <div style={{position:"absolute",top:0,left:0,right:0,height:2,
+          background:"linear-gradient(90deg,transparent 0%,rgba(99,102,241,0.7) 30%,rgba(34,211,238,0.9) 50%,rgba(99,102,241,0.7) 70%,transparent 100%)",
+          boxShadow:"0 0 20px rgba(34,211,238,0.5), 0 0 40px rgba(99,102,241,0.3)"}}/>
+        {/* Scan line sweep */}
+        <div style={{position:"absolute",left:0,right:0,height:40,
+          background:"linear-gradient(180deg,transparent,rgba(129,140,248,0.03),transparent)",
+          animation:"holo-scan 5s linear infinite",pointerEvents:"none"}}/>
+        {/* Ambient orbs */}
+        <div style={{position:"absolute",top:-40,right:-20,width:140,height:140,borderRadius:"50%",
+          background:"radial-gradient(circle,rgba(79,70,229,0.2),transparent 70%)",pointerEvents:"none",
+          animation:"orbitPulse 6s ease infinite"}}/>
+        <div style={{position:"absolute",bottom:-50,left:-20,width:110,height:110,borderRadius:"50%",
+          background:"radial-gradient(circle,rgba(34,211,238,0.12),transparent 70%)",pointerEvents:"none",
+          animation:"orbitPulse 8s ease 2s infinite"}}/>
 
-        <div style={{fontSize:10,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
-          color:"rgba(255,255,255,0.6)",letterSpacing:3,marginBottom:6}}>📊 YOUR JOURNEY</div>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:32,color:"#fff",
-          letterSpacing:2,lineHeight:1,marginBottom:4,
-          textShadow:"0 2px 12px rgba(157,23,77,0.4)"}}>
-          PROGRESS REPORT
-        </div>
-        <div style={{display:"flex",alignItems:"center",gap:8,marginTop:10}}>
-          <div style={{flex:1,height:7,background:"rgba(255,255,255,0.2)",borderRadius:99,overflow:"hidden"}}>
-            <div style={{height:"100%",width:`${overallPct}%`,
-              background:"linear-gradient(90deg,rgba(255,255,255,0.7),#fff)",
-              borderRadius:99,transition:"width .8s ease",
-              boxShadow:"0 0 8px rgba(255,255,255,0.4)"}}/>
+        {/* 3D tiltable content */}
+        <div style={{
+          transform:`rotateY(${tilt.x}deg) rotateX(${tilt.y}deg)`,
+          transition:"transform .1s ease",
+          transformStyle:"preserve-3d",
+        }}>
+          <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+            color:"rgba(129,140,248,0.6)",letterSpacing:4,marginBottom:6,
+            display:"flex",alignItems:"center",gap:8}}>
+            <div style={{width:20,height:1,background:"rgba(129,140,248,0.4)"}}/>
+            MISSION CONTROL
+            <div style={{width:20,height:1,background:"rgba(129,140,248,0.4)"}}/>
           </div>
-          <span style={{fontFamily:"'Cinzel',sans-serif",fontSize:22,color:"#fff",letterSpacing:1}}>{overallPct}%</span>
-        </div>
-        <div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:4,fontFamily:"'Lora'"}}>
-          {allMastered} of {allTopics} topics mastered
+          <div style={{
+            fontFamily:"'Cinzel',sans-serif",fontSize:26,color:"#fff",
+            letterSpacing:3,lineHeight:1,marginBottom:2,
+            textShadow:"0 0 30px rgba(129,140,248,0.7), 0 0 60px rgba(99,102,241,0.4)",
+          }}>PROGRESS <span style={{color:"#22d3ee",textShadow:"0 0 20px rgba(34,211,238,0.8)"}}>REPORT</span></div>
+          <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",
+            color:"rgba(99,102,241,0.5)",letterSpacing:2,marginBottom:14}}>IIT JEE MASTER · ADVANCEMENT TRACKER</div>
+
+          {/* Main progress bar — neon */}
+          <div style={{position:"relative",height:8,background:"rgba(99,102,241,0.12)",
+            borderRadius:99,overflow:"visible",marginBottom:8,
+            border:"1px solid rgba(99,102,241,0.2)"}}>
+            <div style={{
+              position:"absolute",top:0,left:0,bottom:0,
+              width:`${overallPct}%`,
+              background:"linear-gradient(90deg,#4f46e5,#818cf8 50%,#22d3ee)",
+              borderRadius:99,transition:"width 1.2s cubic-bezier(.4,0,.2,1)",
+              boxShadow:"0 0 12px rgba(129,140,248,0.8), 0 0 24px rgba(99,102,241,0.5)",
+              animation:"progress-bar-glow 3s ease infinite",
+            }}/>
+            {/* Glowing tip dot */}
+            {overallPct>0&&<div style={{
+              position:"absolute",top:"50%",left:`${overallPct}%`,
+              transform:"translate(-50%,-50%)",
+              width:14,height:14,borderRadius:"50%",
+              background:"#22d3ee",
+              boxShadow:"0 0 16px #22d3ee, 0 0 32px rgba(34,211,238,0.6)",
+              border:"2px solid rgba(255,255,255,0.3)",
+            }}/>}
+          </div>
+
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+            <div style={{fontSize:10,color:"rgba(129,140,248,0.55)",fontFamily:"'Lora',serif",fontStyle:"italic"}}>
+              {allMastered} of {allTopics} topics mastered
+            </div>
+            <div style={{
+              fontFamily:"'Cinzel',sans-serif",fontSize:26,color:"#fff",
+              letterSpacing:1,lineHeight:1,
+              textShadow:"0 0 20px rgba(34,211,238,0.9), 0 0 40px rgba(99,102,241,0.5)",
+            }}>{overallPct}<span style={{fontSize:14,color:"rgba(34,211,238,0.7)"}}>%</span></div>
+          </div>
         </div>
       </div>
 
-      <div style={{padding:"14px 14px 24px",display:"flex",flexDirection:"column",gap:12}}>
+      <div style={{padding:"14px 12px 28px",display:"flex",flexDirection:"column",gap:14}}>
 
-        {/* Overall Donut */}
-        <div style={{background:SK.card,borderRadius:20,padding:"18px 20px",
-          boxShadow:SK.shadowMed,border:`1px solid ${SK.border}`,backdropFilter:"blur(12px)"}}>
-          <div style={{fontFamily:"'Lora',serif",fontSize:13,fontWeight:700,
-            color:SK.text,marginBottom:14,letterSpacing:-0.2,
-            display:"flex",alignItems:"center",gap:8}}>
-            <span style={{fontSize:16}}>🌸</span> Overall Mastery
+        {/* ══ STAT CARDS ══ */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8}}>
+          <StatCounter val={allMastered}  col="#a78bfa" label="Mastered"  icon="✦" delay={0}/>
+          <StatCounter val={allPracticed} col="#22d3ee" label="Practiced" icon="◈" delay={80}/>
+          <StatCounter val={allLearning}  col="#fb923c" label="Learning"  icon="◉" delay={160}/>
+          <StatCounter val={allUntouched} col="rgba(99,102,241,0.5)" label="Remaining" icon="○" delay={240}/>
+        </div>
+
+        {/* ══ OVERALL MASTERY RING ══ */}
+        <div className="card-3d-deep glow-border-3d chrome-3d" style={{
+          background:"rgba(7,10,26,0.94)",
+          borderRadius:22,padding:"20px 18px",
+          border:"1px solid rgba(99,102,241,0.22)",
+          backdropFilter:"blur(24px)",
+          boxShadow:"0 12px 50px rgba(0,0,0,0.7), 0 0 60px rgba(79,70,229,0.1), inset 0 1px 0 rgba(129,140,248,0.08)",
+          position:"relative",overflow:"hidden",
+          transformStyle:"preserve-3d",
+        }}>
+          {/* 3D Holo scan lines inside card */}
+          <div className="holo-line"/>
+          <div className="holo-line"/>
+          {/* Card glow top edge */}
+          <div style={{position:"absolute",top:0,left:"15%",right:"15%",height:1,
+            background:"linear-gradient(90deg,transparent,rgba(129,140,248,0.5),transparent)"}}/>
+          {/* 3D bottom shadow edge */}
+          <div style={{position:"absolute",bottom:0,left:0,right:0,height:2,
+            background:"linear-gradient(90deg,transparent,rgba(34,211,238,0.3),transparent)",
+            boxShadow:"0 0 12px rgba(34,211,238,0.2)"}}/>
+          <div style={{fontSize:10,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+            color:"rgba(129,140,248,0.5)",letterSpacing:3,marginBottom:16,
+            display:"flex",alignItems:"center",gap:10}}
+            className="section-header-3d">
+            <div style={{width:16,height:1,background:"rgba(129,140,248,0.35)"}}/>
+            OVERALL MASTERY
+            <div style={{flex:1,height:1,background:"rgba(129,140,248,0.12)"}}/>
           </div>
-          <div style={{display:"flex",alignItems:"center",gap:18}}>
-            <DonutChart data={donutData} size={112} strokeWidth={14} centerText={`${overallPct}%`} centerSub="mastered"/>
-            <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:24}}>
+            {/* 3D Orbit Donut */}
+            <div style={{flexShrink:0,perspective:300}}>
+              <Donut3D data={donutData} size={118} strokeWidth={13} centerText={`${overallPct}%`} centerSub="mastered"/>
+            </div>
+            {/* Legend */}
+            <div style={{flex:1,display:"flex",flexDirection:"column",gap:10}}>
               {donutData.map((d,i)=>(
-                <div key={i} style={{display:"flex",alignItems:"center",gap:8,marginBottom:8}}>
-                  <div style={{width:10,height:10,borderRadius:3,background:d.color,flexShrink:0,
-                    boxShadow:`0 0 4px ${d.color}60`}}/>
-                  <span style={{flex:1,fontSize:11.5,fontFamily:"'Lora'",color:SK.subtext,fontWeight:500}}>{d.label}</span>
-                  <span style={{fontFamily:"'Cinzel',sans-serif",fontSize:18,color:d.color}}>{d.value}</span>
+                <div key={i} style={{display:"flex",alignItems:"center",gap:10}}>
+                  {/* Glowing indicator */}
+                  <div style={{
+                    width:8,height:8,borderRadius:2,
+                    background:d.color,flexShrink:0,
+                    boxShadow:`0 0 8px ${d.color}, 0 0 16px ${d.color}60`,
+                  }}/>
+                  <span style={{flex:1,fontSize:10.5,fontFamily:"'Josefin Sans',sans-serif",
+                    color:"rgba(199,210,254,0.65)",letterSpacing:1,fontWeight:600,
+                    textTransform:"uppercase"}}>{d.label}</span>
+                  {/* Micro progress bar */}
+                  <div style={{width:40,height:2,background:"rgba(99,102,241,0.12)",borderRadius:1,overflow:"hidden"}}>
+                    <div style={{height:"100%",
+                      width:allTopics?`${d.value/allTopics*100}%`:"0%",
+                      background:d.color,
+                      boxShadow:`0 0 4px ${d.color}`}}/>
+                  </div>
+                  <span style={{fontFamily:"'Cinzel',sans-serif",fontSize:20,
+                    color:d.color,minWidth:28,textAlign:"right",
+                    textShadow:`0 0 12px ${d.color}80`}}>{d.value}</span>
                 </div>
               ))}
             </div>
           </div>
         </div>
 
-        {/* Subject Donuts */}
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:8}}>
-          {Object.entries(SUB).map(([k,sub])=>{
-            const chaps=CHAPS.filter(c=>c.sub===k);
-            const subProgs=chaps.map(c=>getProgress(c,ts));
-            const total=subProgs.reduce((a,p)=>a+p.total,0);
-            const mastered=subProgs.reduce((a,p)=>a+p.mastered,0);
-            const practiced=subProgs.reduce((a,p)=>a+p.practiced,0);
-            const learning=subProgs.reduce((a,p)=>a+p.learning,0);
-            const pct=total?Math.round(mastered/total*100):0;
-            const subData=[
-              {value:mastered,color:"#BE185D"},
-              {value:practiced,color:"#7C3AED"},
-              {value:learning,color:"#EA580C"},
-              {value:total-mastered-practiced-learning,color:"rgba(236,72,153,0.15)"},
-            ];
-            return(
-              <div key={k} style={{background:SK.card,borderRadius:16,padding:"14px 10px",
-                boxShadow:SK.shadow,border:`1px solid ${SK.border}`,textAlign:"center",
-                backdropFilter:"blur(8px)"}}>
-                <div style={{fontSize:20,marginBottom:8}}>{sub.icon}</div>
-                <DonutChart data={subData} size={74} strokeWidth={11} centerText={`${pct}%`}/>
-                <div style={{fontSize:10.5,fontWeight:800,color:SK.accent,marginTop:8,letterSpacing:0.3}}>{sub.short}</div>
-                <div style={{fontSize:9.5,color:SK.dim,marginTop:2,fontWeight:600}}>{mastered}/{total}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Status Stats — sakura pill style */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
-          {[
-            {label:"Mastered",  val:allMastered,  icon:"🌸",col:"#BE185D",bg:"rgba(190,24,93,0.1)"},
-            {label:"Practiced", val:allPracticed, icon:"🌺",col:"#7C3AED",bg:"rgba(124,58,237,0.1)"},
-            {label:"Learning",  val:allLearning,  icon:"🌼",col:"#EA580C",bg:"rgba(234,88,12,0.09)"},
-            {label:"Not Started",val:allUntouched,icon:"○", col:"rgba(157,23,77,0.4)",bg:"rgba(236,72,153,0.06)"},
-          ].map((s,i)=>(
-            <div key={i} style={{background:SK.card,borderRadius:14,padding:"13px 14px",
-              boxShadow:SK.shadow,border:`1px solid ${SK.border}`,
-              display:"flex",alignItems:"center",gap:12,backdropFilter:"blur(8px)"}}>
-              <div style={{width:36,height:36,borderRadius:10,background:s.bg,
-                display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,
-                boxShadow:`0 2px 8px ${s.col}20`}}>
-                {s.icon}
-              </div>
-              <div>
-                <div style={{fontSize:22,fontWeight:900,color:s.col,letterSpacing:-0.5,
-                  fontFamily:"'Bebas Neue',sans-serif"}}>{s.val}</div>
-                <div style={{fontSize:10,color:SK.dim,fontWeight:600,marginTop:1}}>{s.label}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Chapter Breakdown */}
-        <div style={{background:SK.card,borderRadius:20,padding:"16px 18px",
-          boxShadow:SK.shadowMed,border:`1px solid ${SK.border}`,backdropFilter:"blur(12px)"}}>
-          <div style={{fontSize:13,fontWeight:800,color:SK.text,marginBottom:14,letterSpacing:-0.2,
+        {/* ══ SUBJECT CARDS 3D ══ */}
+        <div>
+          <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+            color:"rgba(99,102,241,0.45)",letterSpacing:3,marginBottom:10,
             display:"flex",alignItems:"center",gap:8}}>
-            <span>🌺</span> Chapter Breakdown
+            <div style={{width:12,height:1,background:"rgba(99,102,241,0.3)"}}/>
+            SUBJECT BREAKDOWN
+            <div style={{flex:1,height:1,background:"rgba(99,102,241,0.08)"}}/>
           </div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:10}}>
+            {Object.entries(SUB).map(([k,sub])=>(
+              <SubjectMiniCard key={k} subKey={k} sub={sub} ts={ts}/>
+            ))}
+          </div>
+        </div>
+
+        {/* ══ CHAPTER BREAKDOWN ══ */}
+        <div className="card-3d-deep chrome-3d" style={{
+          background:"rgba(7,10,26,0.94)",
+          borderRadius:22,padding:"18px 14px 16px",
+          border:"1px solid rgba(99,102,241,0.2)",
+          backdropFilter:"blur(24px)",
+          boxShadow:"0 12px 50px rgba(0,0,0,0.7),inset 0 1px 0 rgba(129,140,248,0.06)",
+          position:"relative",overflow:"hidden",
+        }}>
+          <div className="holo-line"/>
+          <div style={{position:"absolute",top:0,left:"15%",right:"15%",height:1,
+            background:"linear-gradient(90deg,transparent,rgba(129,140,248,0.35),transparent)"}}/>
+          {/* 3D side glow */}
+          <div style={{position:"absolute",top:0,left:0,bottom:0,width:2,
+            background:"linear-gradient(180deg,transparent,rgba(99,102,241,0.4),transparent)",
+            boxShadow:"0 0 12px rgba(99,102,241,0.2)"}}/>
+          <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+            color:"rgba(99,102,241,0.45)",letterSpacing:3,marginBottom:14,
+            display:"flex",alignItems:"center",gap:8}}
+            className="section-header-3d">
+            <div style={{width:12,height:1,background:"rgba(99,102,241,0.3)"}}/>
+            CHAPTER PROGRESS LOG
+            <div style={{flex:1,height:1,background:"rgba(99,102,241,0.08)"}}/>
+          </div>
+
           {started.length===0
-            ?<div style={{fontSize:12,color:SK.dim,textAlign:"center",padding:"16px 0"}}>
-              Start studying to see progress here! 🌸
-            </div>
-            :started.map(c=>{
+            ?(
+              <div style={{textAlign:"center",padding:"20px 0"}}>
+                <div style={{fontSize:28,marginBottom:8,opacity:0.4}}>◉</div>
+                <div style={{fontSize:11,color:"rgba(99,102,241,0.45)",fontFamily:"'Lora',serif",fontStyle:"italic"}}>
+                  Begin your journey to see progress here
+                </div>
+              </div>
+            )
+            :started.map((c,idx)=>{
               const p=getProgress(c,ts);
               const s=SUB[c.sub];
-              return(
-                <div key={c.id} style={{display:"flex",alignItems:"center",gap:8,marginBottom:10}}>
-                  <span style={{fontSize:11,color:SK.accent,width:18,textAlign:"center",flexShrink:0}}>{s.icon}</span>
-                  <span style={{flex:1,fontSize:11.5,color:SK.subtext,minWidth:0,overflow:"hidden",
-                    textOverflow:"ellipsis",whiteSpace:"nowrap",fontWeight:500}}>{c.name}</span>
-                  <div style={{width:80,height:5,background:"rgba(249,168,212,0.3)",borderRadius:3,overflow:"hidden",flexShrink:0}}>
-                    <div style={{height:"100%",width:`${p.pct}%`,
-                      background:SK.progressBar,borderRadius:3,transition:"width .5s"}}/>
-                  </div>
-                  <span style={{fontSize:10,color:SK.accent,fontWeight:800,width:28,textAlign:"right",flexShrink:0}}>{p.pct}%</span>
-                </div>
-              );
+              return<ChapRow key={c.id} c={c} p={p} sub={s} idx={idx}/>;
             })}
+
           {CHAPS.length-started.length>0&&(
-            <div style={{fontSize:11,color:SK.dim,marginTop:8,paddingTop:10,
-              borderTop:`1px solid ${SK.border}`,fontWeight:500}}>
-              🌸 {CHAPS.length-started.length} chapters not yet started
+            <div style={{
+              fontSize:10,color:"rgba(99,102,241,0.35)",marginTop:10,paddingTop:12,
+              borderTop:"1px solid rgba(99,102,241,0.1)",
+              fontFamily:"'Josefin Sans',sans-serif",fontWeight:600,letterSpacing:1,
+              display:"flex",alignItems:"center",gap:6,
+            }}>
+              <div style={{width:6,height:6,borderRadius:"50%",background:"rgba(99,102,241,0.3)"}}/>
+              {CHAPS.length-started.length} chapters not yet initiated
             </div>
           )}
         </div>
+
       </div>
     </div>
   );
@@ -3662,12 +4743,34 @@ function SubjectPage({subKey,ts,setTs,onBack}){
     <div style={{flex:1,display:"flex",flexDirection:"column",overflow:"hidden",animation:"slideInRight .3s ease"}}>
 
       {/* Subject header */}
-      <div style={{background:gradients[subKey],padding:"14px 16px 20px",
-        flexShrink:0,position:"relative",overflow:"hidden"}}>
+      <div className="subject-header-3d chrome-3d" style={{background:gradients[subKey],padding:"14px 16px 20px",
+        flexShrink:0,position:"relative",overflow:"hidden",
+        boxShadow:"0 8px 40px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.1)",
+        borderBottom:"1px solid rgba(255,255,255,0.08)"}}>
 
-        {/* Decorative */}
-        <div style={{position:"absolute",top:-40,right:-40,width:200,height:200,borderRadius:"50%",background:"rgba(255,255,255,0.04)",pointerEvents:"none"}}/>
-        <div style={{position:"absolute",bottom:-30,left:-10,width:130,height:130,borderRadius:"50%",background:"rgba(255,255,255,0.03)",pointerEvents:"none"}}/>
+        {/* 3D holographic grid overlay */}
+        <div style={{position:"absolute",inset:0,opacity:0.06,pointerEvents:"none"}}
+          className="neon-grid-3d"/>
+        {/* Holo scan lines */}
+        <div className="holo-line"/>
+        <div className="holo-line"/>
+        <div className="holo-line"/>
+
+        {/* Decorative 3D orbs */}
+        <div style={{position:"absolute",top:-40,right:-40,width:200,height:200,borderRadius:"50%",
+          background:"rgba(255,255,255,0.06)",pointerEvents:"none",
+          boxShadow:"0 0 60px rgba(255,255,255,0.08)",
+          animation:"orbitPulse 5s ease infinite"}}/>
+        <div style={{position:"absolute",bottom:-30,left:-10,width:130,height:130,borderRadius:"50%",
+          background:"rgba(255,255,255,0.04)",pointerEvents:"none",
+          animation:"orbitPulse 7s ease 1s infinite"}}/>
+        {/* 3D depth rings on subject header */}
+        <div style={{position:"absolute",top:-60,right:-60,width:280,height:280,borderRadius:"50%",
+          border:"1px solid rgba(255,255,255,0.06)",pointerEvents:"none",
+          animation:"orbitPulse 9s ease 0.5s infinite"}}/>
+        <div style={{position:"absolute",top:-80,right:-80,width:340,height:340,borderRadius:"50%",
+          border:"1px solid rgba(255,255,255,0.03)",pointerEvents:"none",
+          animation:"orbitPulse 12s ease 2s infinite"}}/>
 
         {/* Back button */}
         <button onClick={onBack} style={{
@@ -3697,8 +4800,10 @@ function SubjectPage({subKey,ts,setTs,onBack}){
               {val:`${pct}%`,lbl:"Progress"},
               {val:xp.toLocaleString(),lbl:"XP Earned"},
             ].map((s,i)=>(
-              <div key={i} style={{background:"rgba(255,255,255,0.14)",borderRadius:10,
-                padding:"6px 12px",border:"1px solid rgba(255,255,255,0.2)",textAlign:"center"}}>
+              <div key={i} className="card-3d-flip chrome-3d" style={{background:"rgba(255,255,255,0.14)",borderRadius:10,
+                padding:"6px 12px",border:"1px solid rgba(255,255,255,0.2)",textAlign:"center",
+                boxShadow:"0 4px 12px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.15)",
+                cursor:"default",animation:`rotateIn3D 0.4s ease ${i*0.08}s both`}}>
                 <div style={{fontFamily:"'Cinzel',sans-serif",fontSize:18,color:"#fff",lineHeight:1}}>{s.val}</div>
                 <div style={{fontSize:8,fontFamily:"'Josefin Sans',sans-serif",fontWeight:600,
                   color:"rgba(255,255,255,0.65)",letterSpacing:0.8,marginTop:1}}>{s.lbl.toUpperCase()}</div>
@@ -3742,7 +4847,7 @@ function SubjectPage({subKey,ts,setTs,onBack}){
             <div style={{fontSize:13,fontFamily:"'Lora',serif"}}>No chapters match "{search}"</div>
           </div>
         ):displayed.map((chap,i)=>(
-          <div key={chap.id} style={{marginBottom:10,animation:`fadeSlideUp .2s ease ${i*0.04}s both`}}>
+          <div key={chap.id} className="chapter-3d" style={{marginBottom:10,animation:`fadeSlideUp .2s ease ${i*0.04}s both`}}>
             <ChapterCard chap={chap} ts={ts} setTs={setTs}/>
           </div>
         ))}
@@ -4001,14 +5106,55 @@ export default function App(){
 
   if(!loaded)return(
     <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-      height:"100vh",background:"#0b0918",gap:16,fontFamily:"'Lora',serif"}}>
-      <div style={{width:64,height:64,borderRadius:20,
-        background:"linear-gradient(135deg,#7c3aed,#a855f7)",
-        display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,
-        boxShadow:"0 8px 32px rgba(124,58,237,.5)",animation:"pulse 1.5s ease infinite"}}>📚</div>
-      <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,color:"#a78bfa",
-        letterSpacing:4}}>LOADING...</div>
-      <div style={{fontSize:12,color:"rgba(167,139,250,0.5)",fontFamily:"'Lora'"}}>JEE Master is waking up</div>
+      height:"100vh",background:"#050812",gap:0,fontFamily:"'Lora',serif",position:"relative",overflow:"hidden"}}>
+
+      {/* AE effects on loading screen too */}
+      <AESVGFilters/>
+      <ParticleWorldCanvas/>
+      <FractalNoiseOverlay/>
+      <div className="ae-motion-tile"/>
+      <div className="ae-scanlines"/>
+      {/* Star background */}
+      <div className="star-layer"/>
+
+      {/* Aurora orbs */}
+      <div style={{position:"absolute",top:"20%",left:"50%",transform:"translateX(-50%)",
+        width:300,height:300,borderRadius:"50%",
+        background:"radial-gradient(circle,rgba(99,102,241,0.15) 0%,rgba(79,70,229,0.08) 40%,transparent 70%)",
+        animation:"orbitPulse 4s ease infinite",pointerEvents:"none"}}/>
+      <div style={{position:"absolute",top:"30%",left:"30%",
+        width:180,height:180,borderRadius:"50%",
+        background:"radial-gradient(circle,rgba(34,211,238,0.1) 0%,transparent 70%)",
+        animation:"orbitPulse 5s ease 1s infinite",pointerEvents:"none"}}/>
+
+      <div style={{position:"relative",display:"flex",flexDirection:"column",alignItems:"center",gap:20}}>
+        {/* Glowing icon */}
+        <div style={{width:80,height:80,borderRadius:24,
+          background:"linear-gradient(135deg,#4f46e5 0%,#818cf8 50%,#22d3ee 100%)",
+          display:"flex",alignItems:"center",justifyContent:"center",fontSize:38,
+          boxShadow:"0 0 0 12px rgba(99,102,241,0.1), 0 0 0 24px rgba(99,102,241,0.05), 0 8px 40px rgba(79,70,229,.6)",
+          animation:"pulse 2s ease infinite"}}>📚</div>
+
+        <div style={{textAlign:"center"}}>
+          <div style={{fontFamily:"'Cinzel',serif",fontSize:26,color:"#fff",
+            letterSpacing:5,marginBottom:4,textShadow:"0 0 30px rgba(129,140,248,0.8)"}}
+            className="ae-turbulent-title">
+            JEE <span style={{color:"#818cf8"}}>MASTER</span>
+          </div>
+          <div style={{fontSize:10,fontFamily:"'Josefin Sans',sans-serif",fontWeight:600,
+            color:"rgba(129,140,248,0.5)",letterSpacing:3}}>IIT PREP TRACKER</div>
+        </div>
+
+        {/* Loading bar */}
+        <div style={{width:160,height:2,background:"rgba(99,102,241,0.15)",borderRadius:99,overflow:"hidden",marginTop:8}}>
+          <div style={{height:"100%",background:"linear-gradient(90deg,#4f46e5,#818cf8,#22d3ee)",
+            borderRadius:99,animation:"loadingBar 1.8s ease forwards",
+            boxShadow:"0 0 8px rgba(129,140,248,0.6)"}}/>
+        </div>
+        <div style={{fontSize:11,color:"rgba(129,140,248,0.4)",fontFamily:"'Lora'",letterSpacing:1}}>
+          awakening...
+        </div>
+      </div>
     </div>
   );
 
@@ -4018,45 +5164,73 @@ export default function App(){
 
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100vh",
-      background:"#0b0918",overflow:"hidden",
-      fontFamily:"'Lora',serif",color:C.text}}>
+      background:"#050812",overflow:"hidden",
+      fontFamily:"'Lora',serif",color:C.text,position:"relative"}}>
+
+      {/* ══ AFTER EFFECTS LAYER STACK ══ */}
+      <AESVGFilters/>
+      {/* AE: CC Particle World — 3D depth particles with Echo trails + Glow */}
+      <ParticleWorldCanvas/>
+      {/* AE: Fractal Noise texture overlay */}
+      <FractalNoiseOverlay/>
+      {/* AE: Motion Tile — repeating animated grid */}
+      <div className="ae-motion-tile"/>
+      {/* AE: Scan-lines (Fractal Noise second layer) */}
+      <div className="ae-scanlines"/>
+      {/* Persistent star background */}
+      <div className="star-layer"/>
+      {/* AE: Turbulent aurora orbs (replaces static orbs) */}
+      <TurbulentAurora/>
 
       {/* ── HEADER ── */}
-      <div style={{background:"#0d0a2e",padding:"0 16px",
-        display:"flex",alignItems:"center",gap:12,height:52,flexShrink:0,
-        borderBottom:"1px solid rgba(139,92,246,0.15)",
-        boxShadow:"0 2px 20px rgba(0,0,0,0.4)"}}>
+      <div style={{
+        background:"rgba(7,10,26,0.85)",
+        backdropFilter:"blur(24px)",
+        WebkitBackdropFilter:"blur(24px)",
+        padding:"0 16px",
+        display:"flex",alignItems:"center",gap:12,height:54,flexShrink:0,
+        borderBottom:"1px solid rgba(99,102,241,0.18)",
+        boxShadow:"0 1px 0 rgba(129,140,248,0.08), 0 4px 24px rgba(0,0,0,0.4)",
+        position:"relative",zIndex:10}}
+        className="ae-glow">
+        {/* AE: Glowing header line (Glow + Turbulent Displace) */}
+        <div className="ae-header-glow-line"/>
 
         {/* Logo */}
         {showSubject?(
           /* When in subject, show subject colored header */
           <div style={{display:"flex",alignItems:"center",gap:10,flex:1}}>
-            <div style={{width:30,height:30,borderRadius:9,
-              background:`linear-gradient(135deg,${SUB[activeSub].col},${SUB[activeSub].col}88)`,
-              display:"flex",alignItems:"center",justifyContent:"center",fontSize:16}}>
+            <div style={{width:32,height:32,borderRadius:10,
+              background:`linear-gradient(135deg,${SUB[activeSub].col},${SUB[activeSub].col}aa)`,
+              display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,
+              boxShadow:`0 4px 12px ${SUB[activeSub].col}50`}}>
               {SUB[activeSub].icon}
             </div>
             <div>
-              <div style={{fontFamily:"'Cinzel',sans-serif",fontSize:18,color:"#fff",
-                letterSpacing:2,lineHeight:1}}>{SUB[activeSub].label.toUpperCase()}</div>
-              <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:600,
-                color:"rgba(255,255,255,0.4)",letterSpacing:1}}>JEE MASTER</div>
+              <div style={{fontFamily:"'Cinzel',sans-serif",fontSize:17,color:"#fff",
+                letterSpacing:2.5,lineHeight:1,textShadow:`0 0 20px ${SUB[activeSub].col}60`}}
+                className="ae-turbulent-title">
+                {SUB[activeSub].label.toUpperCase()}</div>
+              <div style={{fontSize:8,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+                color:"rgba(255,255,255,0.3)",letterSpacing:2}}>JEE MASTER</div>
             </div>
           </div>
         ):(
-          <div style={{display:"flex",alignItems:"center",gap:9}}>
-            <div style={{width:30,height:30,borderRadius:9,
-              background:"linear-gradient(135deg,#7c3aed,#a855f7)",
-              display:"flex",alignItems:"center",justifyContent:"center",fontSize:15,
-              boxShadow:"0 2px 10px rgba(124,58,237,.5)"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:32,height:32,borderRadius:10,
+              background:"linear-gradient(135deg,#4f46e5,#818cf8,#22d3ee)",
+              display:"flex",alignItems:"center",justifyContent:"center",fontSize:16,
+              boxShadow:"0 4px 16px rgba(79,70,229,.55), 0 0 0 1px rgba(129,140,248,0.2)"}}>
               📚
             </div>
             <div>
-              <div style={{fontFamily:"'Cinzel',sans-serif",fontSize:18,color:"#fff",letterSpacing:2,lineHeight:1}}>
-                JEE <span style={{color:"#a78bfa"}}>MASTER</span>
+              <div style={{fontFamily:"'Cinzel',sans-serif",fontSize:18,color:"#fff",letterSpacing:2.5,lineHeight:1,
+                textShadow:"0 0 24px rgba(129,140,248,0.5)"}}
+                className="ae-turbulent-title">
+                JEE <span style={{color:"#818cf8"}}>MASTER</span>
               </div>
-              <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:600,
-                color:"rgba(255,255,255,0.35)",letterSpacing:1}}>IIT PREP TRACKER</div>
+              <div style={{fontSize:8,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+                color:"rgba(129,140,248,0.4)",letterSpacing:2}}>IIT PREP TRACKER</div>
             </div>
           </div>
         )}
@@ -4065,69 +5239,87 @@ export default function App(){
 
         {streak>0&&(
           <div style={{display:"flex",alignItems:"center",gap:4,
-            background:"rgba(251,191,36,0.12)",border:"1px solid rgba(251,191,36,0.25)",
-            borderRadius:20,padding:"4px 10px"}}>
-            <span style={{fontSize:12}}>🔥</span>
+            background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.28)",
+            borderRadius:20,padding:"4px 10px",
+            boxShadow:"0 0 12px rgba(245,158,11,0.1)",
+            position:"relative"}}
+            className="ae-glow-gold">
+            <div className="ae-echo-ring" style={{borderColor:"rgba(245,158,11,0.35)"}}/>
+            <span style={{fontSize:12,animation:"float 3s ease infinite"}}>🔥</span>
             <span style={{fontFamily:"'Josefin Sans',sans-serif",fontSize:11,fontWeight:700,color:"#fbbf24",letterSpacing:0.5}}>{streak}D</span>
           </div>
         )}
         <div style={{display:"flex",alignItems:"center",gap:5,
-          background:"rgba(124,58,237,.22)",border:"1px solid rgba(124,58,237,.35)",
-          borderRadius:20,padding:"4px 11px"}}>
+          background:"rgba(79,70,229,0.15)",border:"1px solid rgba(99,102,241,0.3)",
+          borderRadius:20,padding:"4px 11px",
+          boxShadow:"0 0 14px rgba(99,102,241,0.1)",
+          position:"relative"}}
+          className="ae-glow">
+          <div className="ae-echo-ring"/>
+          <div className="ae-echo-ring"/>
           <span style={{fontSize:11}}>{lvl.icon}</span>
-          <span style={{fontFamily:"'Josefin Sans',sans-serif",fontSize:11,fontWeight:700,color:"#c4b5fd",letterSpacing:0.5}}>{xp.toLocaleString()} XP</span>
+          <span style={{fontFamily:"'Josefin Sans',sans-serif",fontSize:11,fontWeight:700,color:"#a5b4fc",letterSpacing:0.5}}>{xp.toLocaleString()} XP</span>
         </div>
       </div>
 
       {/* ── CONTENT ── */}
-      <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",background:"#0b0918"}}>
+      <div style={{flex:1,overflow:"hidden",display:"flex",flexDirection:"column",background:"transparent",position:"relative",zIndex:1}}>
         {showHome&&<Dashboard ts={ts} streak={streak} onSubjectPress={setActiveSub}/>}
         {showSubject&&<SubjectPage subKey={activeSub} ts={ts} setTs={setTs} onBack={()=>setActiveSub(null)}/>}
         {mainTab==="progress"&&<ProgressView ts={ts}/>}
         {mainTab==="journal"&&<JournalView/>}
       </div>
 
-      {/* ── BOTTOM NAV — contextual colors ── */}
-      <div style={{display:"flex",
-        background:mainTab==="journal"?"#080C1E":mainTab==="progress"?"#4a0728":"#0d0a2e",
-        borderTop:mainTab==="journal"?"1px solid rgba(212,175,55,0.2)":mainTab==="progress"?"1px solid rgba(236,72,153,0.2)":"1px solid rgba(139,92,246,0.2)",
+      {/* ── BOTTOM NAV — frosted glass pill ── */}
+      <div style={{
+        display:"flex",
+        background:"rgba(6,9,22,0.88)",
+        backdropFilter:"blur(28px)",
+        WebkitBackdropFilter:"blur(28px)",
+        borderTop:"1px solid rgba(99,102,241,0.15)",
         flexShrink:0,
-        boxShadow:"0 -4px 24px rgba(0,0,0,0.5)",paddingBottom:"env(safe-area-inset-bottom,0px)",
-        transition:"background 0.3s ease, border-top 0.3s ease"}}>
+        boxShadow:"0 -1px 0 rgba(129,140,248,0.08), 0 -8px 32px rgba(0,0,0,0.5)",
+        paddingBottom:"env(safe-area-inset-bottom,0px)",
+        position:"relative",zIndex:10}}>
         {BOTTOM_NAV.map(t=>{
           const active=mainTab===t.k&&(t.k!=="home"||!activeSub)||
                        (t.k==="home"&&mainTab==="home");
           const isHome=t.k==="home";
           // Context-aware accent colors
-          const navAccent=mainTab==="journal"?"#D4AF37":mainTab==="progress"?"#EC4899":"#a78bfa";
-          const navGlow=mainTab==="journal"?"rgba(212,175,55,0.6)":mainTab==="progress"?"rgba(236,72,153,0.6)":"rgba(168,85,247,0.6)";
-          const navGrad=mainTab==="journal"?"linear-gradient(90deg,#8B6914,#D4AF37)":mainTab==="progress"?"linear-gradient(90deg,#BE185D,#EC4899)":"linear-gradient(90deg,#7c3aed,#a855f7)";
+          const navAccent=mainTab==="journal"?"#f59e0b":mainTab==="progress"?"#f472b6":"#818cf8";
+          const navGlow=mainTab==="journal"?"rgba(245,158,11,0.5)":mainTab==="progress"?"rgba(244,114,182,0.5)":"rgba(129,140,248,0.5)";
+          const navGrad=mainTab==="journal"?"linear-gradient(90deg,#b45309,#f59e0b)":mainTab==="progress"?"linear-gradient(90deg,#be185d,#f472b6)":"linear-gradient(90deg,#4f46e5,#818cf8,#22d3ee)";
           return(
             <button key={t.k}
               onClick={()=>{
                 if(isHome&&activeSub&&mainTab==="home"){setActiveSub(null);}
                 else{handleNavTab(t.k);}
               }}
-              style={{flex:1,padding:"10px 4px 8px",border:"none",cursor:"pointer",
+              style={{flex:1,padding:"10px 4px 9px",border:"none",cursor:"pointer",
                 background:"transparent",display:"flex",flexDirection:"column",
-                alignItems:"center",gap:3,position:"relative",transition:"all .15s",
+                alignItems:"center",gap:4,position:"relative",transition:"all .18s",
                 WebkitTapHighlightColor:"transparent"}}>
               {active&&(
-                <div style={{position:"absolute",top:0,left:"25%",right:"25%",height:2,
+                <div style={{position:"absolute",top:0,left:"20%",right:"20%",height:2,
                   background:navGrad,
-                  borderRadius:"0 0 4px 4px",animation:"navPop .2s ease",
-                  boxShadow:`0 0 8px ${navGlow}`}}/>
+                  borderRadius:"0 0 6px 6px",animation:"navPop .2s ease",
+                  boxShadow:`0 0 10px ${navGlow}, 0 2px 6px ${navGlow}`}}/>
+              )}
+              {active&&(
+                <div style={{position:"absolute",inset:"2px 10px",borderRadius:12,
+                  background:`${navGlow.replace('0.5','0.07')}`,
+                  pointerEvents:"none"}}/>
               )}
               <span style={{
                 fontSize:20,lineHeight:1,
-                filter:active?"none":"grayscale(1) opacity(0.3)",
-                transform:active?"scale(1.15)":"scale(1)",
-                transition:"all .2s",display:"block",
+                filter:active?"none":"grayscale(1) opacity(0.25)",
+                transform:active?"scale(1.18) translateY(-1px)":"scale(1)",
+                transition:"all .22s cubic-bezier(.34,1.56,.64,1)",display:"block",
               }}>{t.emoji}</span>
               <span style={{
-                fontSize:8.5,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
-                letterSpacing:1,textTransform:"uppercase",
-                color:active?navAccent:"rgba(255,255,255,0.25)",
+                fontSize:8,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+                letterSpacing:1.5,textTransform:"uppercase",
+                color:active?navAccent:"rgba(255,255,255,0.2)",
                 transition:"color .15s"}}>
                 {t.label}
               </span>
