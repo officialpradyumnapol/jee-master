@@ -129,8 +129,8 @@ const GLOBAL_CSS = `
   .glass-card {
     background: rgba(13,18,42,0.7);
     border: 1px solid rgba(99,102,241,0.2);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     border-radius: 20px;
     box-shadow: 0 4px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05);
   }
@@ -283,12 +283,12 @@ const GLOBAL_CSS = `
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    opacity: 0.022;
+    opacity: 0.015;
     background-image:
       linear-gradient(rgba(99,102,241,1) 1px, transparent 1px),
       linear-gradient(90deg, rgba(99,102,241,1) 1px, transparent 1px);
     background-size: 48px 48px;
-    animation: motionTileScroll 35s linear infinite;
+    /* No animation — static grid is fine and saves GPU */
   }
   @keyframes motionTileScroll {
     0%   { background-position: 0 0; }
@@ -738,21 +738,15 @@ function AESVGFilters() {
   return (
     <svg style={{position:'fixed',width:0,height:0,pointerEvents:'none',overflow:'hidden'}} aria-hidden="true">
       <defs>
-        {/* Turbulent Displace — warps borders & glows */}
-        <filter id="ae-turbulent" x="-10%" y="-10%" width="120%" height="120%">
-          <feTurbulence type="turbulence" baseFrequency="0.012 0.008" numOctaves="3" seed="3" result="noise">
-            <animate attributeName="baseFrequency" values="0.012 0.008;0.018 0.013;0.012 0.008" dur="10s" repeatCount="indefinite"/>
-            <animate attributeName="seed" values="3;7;12;3" dur="18s" repeatCount="indefinite"/>
-          </feTurbulence>
-          <feDisplacementMap in="SourceGraphic" in2="noise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+        {/* Turbulent Displace — static, no animation for performance */}
+        <filter id="ae-turbulent" x="-5%" y="-5%" width="110%" height="110%">
+          <feTurbulence type="turbulence" baseFrequency="0.014 0.009" numOctaves="2" seed="3" result="noise"/>
+          <feDisplacementMap in="SourceGraphic" in2="noise" scale="3" xChannelSelector="R" yChannelSelector="G"/>
         </filter>
 
-        {/* Fractal Noise overlay filter */}
+        {/* Fractal Noise overlay — static for performance */}
         <filter id="ae-fractal-noise" x="0%" y="0%" width="100%" height="100%">
-          <feTurbulence type="fractalNoise" baseFrequency="0.72 0.52" numOctaves="4" stitchTiles="stitch" result="noise">
-            <animate attributeName="baseFrequency" values="0.72 0.52;0.78 0.58;0.72 0.52" dur="20s" repeatCount="indefinite"/>
-            <animate attributeName="seed" values="0;4;8;12;0" dur="40s" repeatCount="indefinite"/>
-          </feTurbulence>
+          <feTurbulence type="fractalNoise" baseFrequency="0.72 0.52" numOctaves="2" stitchTiles="stitch" result="noise"/>
           <feColorMatrix type="saturate" values="0" result="grayNoise"/>
           <feBlend in="SourceGraphic" in2="grayNoise" mode="screen"/>
         </filter>
@@ -793,85 +787,62 @@ function ParticleWorldCanvas() {
     resize();
     window.addEventListener('resize', resize);
 
-    // CC Particle World: 3D depth particles
-    const COUNT = 60;
-    const HUES = [248, 192, 272, 215, 260]; // violet, cyan, purple, sky, indigo
+    // Lightweight particles — mobile-friendly (no trails, no per-particle radial gradients)
+    const COUNT = 22;
+    const HUES = [248, 192, 272, 215, 260];
     const particles = Array.from({length: COUNT}, () => ({
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
-      z: Math.random(),                          // depth: 0=far, 1=near
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: (Math.random() - 0.5) * 0.25,
-      vz: (Math.random() - 0.5) * 0.0015,
+      z: Math.random(),
+      vx: (Math.random() - 0.5) * 0.2,
+      vy: (Math.random() - 0.5) * 0.2,
       baseR: Math.random() * 1.2 + 0.4,
       hue: HUES[Math.floor(Math.random() * HUES.length)],
       phase: Math.random() * Math.PI * 2,
-      phaseSpeed: 0.004 + Math.random() * 0.006,
-      trail: [],                                 // Echo effect
+      phaseSpeed: 0.003 + Math.random() * 0.004,
     }));
 
-    const drawFrame = () => {
+    // Throttle to ~30fps on mobile for big savings
+    let lastTime = 0;
+    const drawFrame = (now) => {
+      animRef.current = requestAnimationFrame(drawFrame);
+      if (now - lastTime < 33) return; // ~30fps cap
+      lastTime = now;
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
       for (const p of particles) {
         p.phase += p.phaseSpeed;
-
-        // Turbulent Displace: organic sinusoidal drift
-        const wx = Math.sin(p.phase * 1.1 + p.y * 0.0025) * 0.5;
-        const wy = Math.cos(p.phase * 0.8 + p.x * 0.0025) * 0.5;
-        p.x += p.vx + wx;
-        p.y += p.vy + wy;
-        p.z = Math.max(0.02, Math.min(0.97, p.z + p.vz));
-
-        // Wrap (Motion Tile)
-        if (p.x < -20) p.x = canvas.width + 20;
-        if (p.x > canvas.width + 20) p.x = -20;
-        if (p.y < -20) p.y = canvas.height + 20;
-        if (p.y > canvas.height + 20) p.y = -20;
-
-        // Echo trail storage
-        p.trail.push({x: p.x, y: p.y, z: p.z});
-        if (p.trail.length > 6) p.trail.shift();
+        p.x += p.vx;
+        p.y += p.vy;
+        p.z = Math.max(0.05, Math.min(0.95, p.z + (Math.random()-0.5)*0.003));
+        if (p.x < -10) p.x = canvas.width + 10;
+        if (p.x > canvas.width + 10) p.x = -10;
+        if (p.y < -10) p.y = canvas.height + 10;
+        if (p.y > canvas.height + 10) p.y = -10;
 
         const depth = p.z;
-        const r = p.baseR * (0.4 + depth * 1.8);      // larger = nearer
-        const alpha = 0.06 + depth * 0.38;
-        const pulse = 0.88 + Math.sin(p.phase) * 0.12; // Glow pulse
+        const r = p.baseR * (0.5 + depth * 1.5);
+        const alpha = 0.08 + depth * 0.32;
 
-        // ── Echo trail (AE Echo effect) ──
-        for (let i = 0; i < p.trail.length - 1; i++) {
-          const tp = p.trail[i];
-          const tRatio = i / p.trail.length;
-          const tAlpha = alpha * tRatio * 0.35;
-          const tR = r * tRatio * 0.55;
-          if (tR < 0.1) continue;
+        // Simple soft glow — single radial gradient only for near particles
+        if (depth > 0.5) {
+          const glowR = r * 4;
+          const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
+          grd.addColorStop(0, `hsla(${p.hue},80%,72%,${alpha * 0.5})`);
+          grd.addColorStop(1, `hsla(${p.hue},80%,65%,0)`);
           ctx.beginPath();
-          ctx.arc(tp.x, tp.y, tR, 0, Math.PI * 2);
-          ctx.fillStyle = `hsla(${p.hue},80%,72%,${tAlpha})`;
+          ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
+          ctx.fillStyle = grd;
           ctx.fill();
         }
-
-        // ── Glow halo (AE Glow effect) ──
-        const glowR = r * 5.5 * pulse;
-        const grd = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, glowR);
-        grd.addColorStop(0,   `hsla(${p.hue},85%,75%,${alpha * 0.75})`);
-        grd.addColorStop(0.35,`hsla(${p.hue},80%,65%,${alpha * 0.25})`);
-        grd.addColorStop(1,   `hsla(${p.hue},80%,65%,0)`);
+        // Core dot
         ctx.beginPath();
-        ctx.arc(p.x, p.y, glowR, 0, Math.PI * 2);
-        ctx.fillStyle = grd;
-        ctx.fill();
-
-        // ── Core particle (CC Particle World core dot) ──
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, r * pulse, 0, Math.PI * 2);
-        ctx.fillStyle = `hsla(${p.hue},92%,88%,${Math.min(1, alpha * 1.3)})`;
+        ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+        ctx.fillStyle = `hsla(${p.hue},90%,85%,${Math.min(1, alpha * 1.2)})`;
         ctx.fill();
       }
-
-      animRef.current = requestAnimationFrame(drawFrame);
     };
-    drawFrame();
+    animRef.current = requestAnimationFrame(drawFrame);
 
     return () => {
       cancelAnimationFrame(animRef.current);
@@ -903,10 +874,7 @@ function FractalNoiseOverlay() {
       aria-hidden="true"
     >
       <filter id="fn-overlay">
-        <feTurbulence type="fractalNoise" baseFrequency="0.68 0.5" numOctaves="4" stitchTiles="stitch">
-          <animate attributeName="baseFrequency" values="0.68 0.5;0.74 0.56;0.68 0.5" dur="18s" repeatCount="indefinite"/>
-          <animate attributeName="seed" values="1;6;11;16;1" dur="35s" repeatCount="indefinite"/>
-        </feTurbulence>
+        <feTurbulence type="fractalNoise" baseFrequency="0.68 0.5" numOctaves="2" stitchTiles="stitch"/>
         <feColorMatrix type="saturate" values="0"/>
       </filter>
       <rect width="100%" height="100%" filter="url(#fn-overlay)" fill="rgba(99,102,241,0.9)"/>
@@ -918,13 +886,12 @@ function FractalNoiseOverlay() {
 function TurbulentAurora() {
   return (
     <>
-      {/* Top-right aurora — turbulent displace applied */}
+      {/* Top-right aurora */}
       <div style={{
         position:'fixed', top:-140, right:-100,
         width:480, height:480, borderRadius:'50%',
         background:'radial-gradient(circle, rgba(99,102,241,0.18) 0%, rgba(79,70,229,0.09) 40%, transparent 70%)',
         pointerEvents:'none', zIndex:0,
-        filter:'url(#ae-turbulent)',
         animation:'orbitPulse 7s ease infinite',
       }}/>
       {/* Bottom-left aurora */}
@@ -933,7 +900,6 @@ function TurbulentAurora() {
         width:340, height:340, borderRadius:'50%',
         background:'radial-gradient(circle, rgba(34,211,238,0.12) 0%, rgba(6,182,212,0.06) 40%, transparent 70%)',
         pointerEvents:'none', zIndex:0,
-        filter:'url(#ae-turbulent)',
         animation:'orbitPulse 9s ease 2s infinite',
       }}/>
       {/* Centre deep glow */}
@@ -942,8 +908,6 @@ function TurbulentAurora() {
         width:500, height:300, borderRadius:'50%',
         background:'radial-gradient(ellipse, rgba(79,70,229,0.04) 0%, transparent 70%)',
         pointerEvents:'none', zIndex:0,
-        animation:'auroraShift 12s ease infinite',
-        backgroundSize:'200% 200%',
       }}/>
     </>
   );
@@ -3815,7 +3779,7 @@ function ChapterCard({chap,ts,setTs}){
       overflow:"hidden",
       boxShadow:open?`0 4px 28px ${sub.col}28, 0 0 0 1px ${sub.col}20`:"0 2px 12px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)",
       transition:"box-shadow .25s, transform .25s",
-      backdropFilter:"blur(12px)",
+      backdropFilter:"blur(6px)",
       WebkitBackdropFilter:"blur(12px)",
     }}
     onMouseEnter={e=>{if(!open){e.currentTarget.style.boxShadow=`0 8px 32px ${sub.col}30`;e.currentTarget.style.transform="translateY(-2px)";}}}
@@ -3959,7 +3923,7 @@ function StatCounter({val,col,label,icon,delay=0}){
   const [disp,setDisp]=useState(0);
   useEffect(()=>{
     const t=setTimeout(()=>{
-      const dur=900,steps=40,inc=val/steps;
+      const dur=900,steps=18,inc=val/steps;
       let i=0;
       const iv=setInterval(()=>{
         i++;setDisp(Math.min(Math.round(inc*i),val));
@@ -3976,7 +3940,7 @@ function StatCounter({val,col,label,icon,delay=0}){
       borderRadius:18,
       padding:"14px 12px 12px",
       border:`1px solid ${col}35`,
-      backdropFilter:"blur(20px)",
+      backdropFilter:"blur(4px)",
       boxShadow:`0 8px 32px rgba(0,0,0,0.6), 0 0 30px ${col}15, inset 0 1px 0 ${col}20`,
       overflow:"hidden",
       animation:`fadeSlideUp .5s ease ${delay/1000}s both`,
@@ -4082,7 +4046,7 @@ function SubjectMiniCard({subKey,sub,ts}){
         background:"rgba(8,12,32,0.92)",
         borderRadius:18,padding:"16px 10px 14px",
         border:`1px solid ${hov?col+"66":col+"25"}`,
-        textAlign:"center",backdropFilter:"blur(20px)",
+        textAlign:"center",backdropFilter:"blur(4px)",
         boxShadow:hov
           ?`0 20px 50px rgba(0,0,0,0.8),0 0 40px ${col}35,inset 0 1px 0 ${col}30, 0 0 0 1px ${col}20`
           :`0 6px 24px rgba(0,0,0,0.5),inset 0 1px 0 ${col}12`,
@@ -4280,7 +4244,7 @@ function ProgressView({ts}){
           background:"rgba(7,10,26,0.94)",
           borderRadius:22,padding:"20px 18px",
           border:"1px solid rgba(99,102,241,0.22)",
-          backdropFilter:"blur(24px)",
+          backdropFilter:"blur(10px)",
           boxShadow:"0 12px 50px rgba(0,0,0,0.7), 0 0 60px rgba(79,70,229,0.1), inset 0 1px 0 rgba(129,140,248,0.08)",
           position:"relative",overflow:"hidden",
           transformStyle:"preserve-3d",
@@ -4358,7 +4322,7 @@ function ProgressView({ts}){
           background:"rgba(7,10,26,0.94)",
           borderRadius:22,padding:"18px 14px 16px",
           border:"1px solid rgba(99,102,241,0.2)",
-          backdropFilter:"blur(24px)",
+          backdropFilter:"blur(10px)",
           boxShadow:"0 12px 50px rgba(0,0,0,0.7),inset 0 1px 0 rgba(129,140,248,0.06)",
           position:"relative",overflow:"hidden",
         }}>
@@ -5429,7 +5393,7 @@ function SubjectPage({subKey,ts,setTs,onBack}){
           display:"flex",alignItems:"center",gap:6,background:"rgba(255,255,255,0.15)",
           border:"1px solid rgba(255,255,255,0.25)",borderRadius:12,padding:"6px 14px",
           cursor:"pointer",marginBottom:14,color:"#fff",fontSize:12,
-          fontFamily:"'Lora',serif",fontWeight:600,backdropFilter:"blur(8px)",
+          fontFamily:"'Lora',serif",fontWeight:600,backdropFilter:"blur(4px)",
           position:"relative",zIndex:1}}>
           ← Back to Home
         </button>
@@ -5602,7 +5566,7 @@ function Dashboard({ts,streak,onSubjectPress}){
           </div>
           {streak>0&&(
             <div style={{background:"rgba(251,191,36,0.15)",border:"1px solid rgba(251,191,36,0.35)",
-              borderRadius:14,padding:"8px 14px",textAlign:"center",backdropFilter:"blur(8px)"}}>
+              borderRadius:14,padding:"8px 14px",textAlign:"center",backdropFilter:"blur(4px)"}}>
               <div style={{fontSize:22,lineHeight:1,animation:"float 3s ease infinite"}}>🔥</div>
               <div style={{fontFamily:"'Cinzel',sans-serif",fontSize:20,color:"#fbbf24",lineHeight:1,marginTop:3}}>{streak}</div>
               <div style={{fontSize:8,fontFamily:"'Josefin Sans',sans-serif",fontWeight:600,
@@ -5636,7 +5600,7 @@ function Dashboard({ts,streak,onSubjectPress}){
           ].map((s,i)=>(
             <div key={i} style={{flex:1,background:"rgba(255,255,255,0.07)",borderRadius:14,
               padding:"10px 8px",border:"1px solid rgba(255,255,255,0.1)",textAlign:"center",
-              backdropFilter:"blur(8px)"}}>
+              backdropFilter:"blur(4px)"}}>
               <div style={{fontSize:14,marginBottom:3}}>{s.icon}</div>
               <div style={{fontFamily:"'Cinzel',sans-serif",fontSize:22,color:"#fff",lineHeight:1}}>{s.val}</div>
               <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:600,
@@ -5837,7 +5801,7 @@ export default function App(){
       {/* ── HEADER ── */}
       <div style={{
         background:"rgba(7,10,26,0.85)",
-        backdropFilter:"blur(24px)",
+        backdropFilter:"blur(10px)",
         WebkitBackdropFilter:"blur(24px)",
         padding:"0 16px",
         display:"flex",alignItems:"center",gap:12,height:54,flexShrink:0,
@@ -5926,7 +5890,7 @@ export default function App(){
       <div style={{
         display:"flex",
         background:"rgba(6,9,22,0.88)",
-        backdropFilter:"blur(28px)",
+        backdropFilter:"blur(6px)",
         WebkitBackdropFilter:"blur(28px)",
         borderTop:"1px solid rgba(99,102,241,0.15)",
         flexShrink:0,
