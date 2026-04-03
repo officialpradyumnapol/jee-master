@@ -31,7 +31,7 @@ if (!window.storage) {
 
 // ── FONT & GLOBAL STYLES ────────────────────────────────────────────────
 const GLOBAL_CSS = `
-  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Josefin+Sans:wght@300;400;500;600;700&family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=JetBrains+Mono:wght@400;600&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;800;900&family=Cinzel+Decorative:wght@400;700;900&family=UnifrakturMaguntia&family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600&family=Josefin+Sans:wght@300;400;500;600;700&family=Bebas+Neue&family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400;1,700&family=JetBrains+Mono:wght@400;600&display=swap');
 
   /* ── ANDROID FONT & RENDERING FIXES ── */
   html {
@@ -664,7 +664,69 @@ const GLOBAL_CSS = `
     transition: transform 0.3s ease, box-shadow 0.3s ease;
     transform-style: preserve-3d;
   }
+
+  /* ══════════════════════════════════════════════════
+     PREMIUM CONCEPT STATUS BADGE SYSTEM
+  ══════════════════════════════════════════════════ */
+
+  /* Mastered — pulsing emerald glow */
+  @keyframes masteredPulse {
+    0%,100% { box-shadow: 0 0 0 0 rgba(16,185,129,0), 0 2px 8px rgba(16,185,129,0.35); }
+    50%     { box-shadow: 0 0 0 5px rgba(16,185,129,0.18), 0 4px 16px rgba(16,185,129,0.55); }
+  }
+  .badge-mastered {
+    animation: masteredPulse 2.4s ease infinite;
+  }
+
+  /* Learning — warm amber flicker */
+  @keyframes learningFlicker {
+    0%,100% { box-shadow: 0 0 0 0 rgba(245,158,11,0), 0 2px 8px rgba(245,158,11,0.3); }
+    50%     { box-shadow: 0 0 0 4px rgba(245,158,11,0.2), 0 4px 14px rgba(245,158,11,0.5); }
+  }
+  .badge-learning {
+    animation: learningFlicker 1.8s ease infinite;
+  }
+
+  /* Practiced — violet neon pulse */
+  @keyframes practicedNeon {
+    0%,100% { box-shadow: 0 0 0 0 rgba(124,58,237,0), 0 2px 8px rgba(124,58,237,0.3); }
+    50%     { box-shadow: 0 0 0 4px rgba(124,58,237,0.2), 0 4px 16px rgba(124,58,237,0.5); }
+  }
+  .badge-practiced {
+    animation: practicedNeon 2s ease infinite;
+  }
+
+  /* Status badge shimmer sweep */
+  @keyframes badgeShimmer {
+    0%   { transform: translateX(-120%) skewX(-20deg); }
+    100% { transform: translateX(220%)  skewX(-20deg); }
+  }
+  .badge-shimmer::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.22), transparent);
+    animation: badgeShimmer 2.8s ease infinite;
+    pointer-events: none;
+  }
+
+  /* Concept row glow on mastered */
+  @keyframes masteredRowGlow {
+    0%,100% { border-color: rgba(16,185,129,0.22); }
+    50%     { border-color: rgba(16,185,129,0.48); }
+  }
+  .concept-row-mastered { animation: masteredRowGlow 3s ease infinite; }
+
+  /* Gothic font helper */
+  .gothic-label {
+    font-family: 'UnifrakturMaguntia', cursive;
+  }
+  .algerian-label {
+    font-family: 'Cinzel Decorative', 'Cinzel', serif;
+  }
 `;
+
 
 
 // ══════════════════════════════════════════════════════════════════════
@@ -2146,8 +2208,6 @@ const CHAPS=[
  keyPoints:["E and B: in phase, perpendicular to each other and to direction","EM waves don't need a medium","FM: better quality; immune to amplitude noise","Ozone absorbs UV; ionosphere reflects radio waves"],
  mindmap:{root:"EM Waves &\nCommunication",branches:[{n:"EM Waves",col:"#ea580c",nodes:["Displacement Current","c=1/√μ₀ε₀","E⊥B⊥direction","Poynting Vector"]},{n:"EM Spectrum",col:"#f97316",nodes:["Radio/Microwave","IR/Visible","UV/X-ray","Gamma Rays"]},{n:"Modulation",col:"#dc2626",nodes:["AM vs FM","Modulation Index","Bandwidth 2f_m","Antenna λ/4"]},{n:"Propagation",col:"#b45309",nodes:["Ground Wave","Sky Wave","Space Wave","Satellite/Fiber"]}]}},
 
-,
-
 {id:"p19",sub:"physics",name:"Dual Nature of Radiation & Matter",weight:"High",est:3, syllabus:[
   {topic:"Photoelectric Effect",subtopics:[
     {name:"Experimental Observations",concepts:["Hertz observation: UV on zinc plate causes sparks","Hallwachs & Lenard: systematic study of photoemission","Threshold frequency ν₀: no emission below ν₀ regardless of intensity","KE_max depends only on frequency, NOT on intensity","Intensity increases number of emitted electrons (photocurrent), not KE_max","Emission is instantaneous — no time lag","Stopping potential V₀: KE_max=eV₀"]},
@@ -3568,32 +3628,143 @@ function SyllabusTab({chap,ts,setTs,col}){
                             const isMastered=status==="mastered";
                             const isLearning=status==="learning";
                             const isPracticed=status==="practiced";
-                            const cardBg=isMastered?"rgba(5,150,105,.06)":isPracticed?`${col}06`:isLearning?"rgba(245,158,11,.05)":"#fff";
-                            const cardBorder=isMastered?"rgba(5,150,105,.18)":isPracticed?`${col}18`:isLearning?"rgba(245,158,11,.18)":"rgba(0,0,0,.05)";
+                            const isUntouched=status==="untouched";
+
+                            // Dark-theme card backgrounds — NO white
+                            const cardBg=isMastered
+                              ?"linear-gradient(135deg,rgba(16,185,129,0.13) 0%,rgba(5,150,105,0.07) 100%)"
+                              :isPracticed
+                              ?`linear-gradient(135deg,${col}20 0%,${col}0a 100%)`
+                              :isLearning
+                              ?"linear-gradient(135deg,rgba(245,158,11,0.14) 0%,rgba(180,110,0,0.07) 100%)"
+                              :"rgba(255,255,255,0.03)";
+
+                            const cardBorder=isMastered?"rgba(16,185,129,0.35)"
+                              :isPracticed?`${col}40`
+                              :isLearning?"rgba(245,158,11,0.32)"
+                              :"rgba(255,255,255,0.07)";
+
+                            const badgeGrad=isMastered
+                              ?"linear-gradient(135deg,#10b981,#059669)"
+                              :isPracticed
+                              ?`linear-gradient(135deg,${col},#a855f7)`
+                              :isLearning
+                              ?"linear-gradient(135deg,#f59e0b,#d97706)"
+                              :"linear-gradient(135deg,rgba(180,176,210,0.22),rgba(120,116,160,0.12))";
+
+                            const badgeClass=isMastered?"badge-mastered badge-shimmer"
+                              :isPracticed?"badge-practiced badge-shimmer"
+                              :isLearning?"badge-learning badge-shimmer"
+                              :"";
+
+                            const badgeShadow=isMastered?"0 2px 10px rgba(16,185,129,0.45)"
+                              :isPracticed?`0 2px 10px ${col}60`
+                              :isLearning?"0 2px 10px rgba(245,158,11,0.45)"
+                              :"none";
+
+                            // Concept name: always clearly readable
+                            const conceptTextCol=isMastered?"#6ee7b7"
+                              :isPracticed?"#c4b5fd"
+                              :isLearning?"#fcd34d"
+                              :"#e2dff8";
+
+                            const conceptFontFamily=isMastered
+                              ?"'Cinzel Decorative','Cinzel',serif"
+                              :isLearning
+                              ?"'UnifrakturMaguntia',cursive"
+                              :isPracticed
+                              ?"'Cinzel Decorative','Cinzel',serif"
+                              :"'Lora',serif";
+
+                            const conceptFontSize=isLearning?13.5:12.5;
+
                             return(
                               <div key={ci} onClick={()=>cycleStatus(key)}
-                                style={{display:"flex",alignItems:"flex-start",gap:10,
-                                  padding:"8px 12px",borderRadius:10,cursor:"pointer",
-                                  background:cardBg,border:`1px solid ${cardBorder}`,
-                                  transition:"all .15s",boxShadow:isMastered?"0 1px 4px rgba(5,150,105,.08)":"none"}}
-                                onMouseEnter={e=>{e.currentTarget.style.background=isMastered?"rgba(5,150,105,.1)":isPracticed?`${col}0e`:isLearning?"rgba(245,158,11,.09)":`${col}06`;e.currentTarget.style.transform="translateX(2px)";}}
-                                onMouseLeave={e=>{e.currentTarget.style.background=cardBg;e.currentTarget.style.transform="none";}}>
-                                {/* Status pill */}
-                                <div style={{flexShrink:0,width:20,height:20,borderRadius:6,
-                                  background:isMastered?"rgba(5,150,105,.15)":isPracticed?`${col}15`:isLearning?"rgba(245,158,11,.15)":"rgba(0,0,0,.04)",
-                                  display:"flex",alignItems:"center",justifyContent:"center",
-                                  marginTop:1,transition:"all .15s"}}>
-                                  <span style={{fontSize:10,color:s.col}}>{s.icon}</span>
+                                className={isMastered?"concept-row-mastered":""}
+                                style={{display:"flex",alignItems:"center",gap:10,
+                                  padding:"10px 12px 10px 10px",borderRadius:12,cursor:"pointer",
+                                  background:cardBg,
+                                  border:`1px solid ${cardBorder}`,
+                                  transition:"all .18s cubic-bezier(.34,1.56,.64,1)",
+                                  boxShadow:isMastered
+                                    ?"0 2px 14px rgba(16,185,129,0.12),inset 0 1px 0 rgba(16,185,129,0.08)"
+                                    :isPracticed
+                                    ?`0 2px 14px ${col}18,inset 0 1px 0 ${col}0a`
+                                    :isLearning
+                                    ?"0 2px 14px rgba(245,158,11,0.1),inset 0 1px 0 rgba(245,158,11,0.06)"
+                                    :"none",
+                                  position:"relative",overflow:"hidden"}}
+                                onMouseEnter={e=>{
+                                  e.currentTarget.style.transform="translateX(4px) scale(1.01)";
+                                  e.currentTarget.style.boxShadow=isMastered
+                                    ?"0 4px 20px rgba(16,185,129,0.22)"
+                                    :isPracticed?`0 4px 20px ${col}30`
+                                    :isLearning?"0 4px 20px rgba(245,158,11,0.2)"
+                                    :`0 4px 16px ${col}15`;
+                                }}
+                                onMouseLeave={e=>{
+                                  e.currentTarget.style.transform="none";
+                                  e.currentTarget.style.boxShadow=isMastered
+                                    ?"0 2px 14px rgba(16,185,129,0.12),inset 0 1px 0 rgba(16,185,129,0.08)"
+                                    :"none";
+                                }}>
+
+                                {/* Premium status badge */}
+                                <div className={badgeClass}
+                                  style={{flexShrink:0,position:"relative",overflow:"hidden",
+                                    width:26,height:26,borderRadius:8,
+                                    background:badgeGrad,
+                                    boxShadow:badgeShadow,
+                                    display:"flex",alignItems:"center",justifyContent:"center",
+                                    transition:"all .18s"}}>
+                                  <span style={{
+                                    fontSize:isMastered?14:12,
+                                    color:"#fff",
+                                    lineHeight:1,
+                                    fontWeight:900,
+                                    textShadow:"0 1px 3px rgba(0,0,0,0.5)",
+                                    position:"relative",zIndex:1,
+                                  }}>
+                                    {isMastered?"✦":isPracticed?"◈":isLearning?"◉":"○"}
+                                  </span>
                                 </div>
-                                {/* Concept text */}
-                                <span style={{flex:1,fontSize:12,color:isMastered?"#059669":status==="untouched"?C.subtext:C.text,
-                                  lineHeight:1.6,fontWeight:isMastered?600:status==="untouched"?400:500,
-                                  textDecoration:"none"}}>{concept}</span>
-                                {/* Status label */}
-                                <span style={{fontSize:8.5,fontWeight:700,color:s.col,flexShrink:0,
-                                  background:isMastered?"rgba(5,150,105,.1)":isPracticed?`${col}10`:isLearning?"rgba(245,158,11,.1)":"rgba(0,0,0,.04)",
-                                  padding:"2px 6px",borderRadius:5,letterSpacing:0.3,
-                                  alignSelf:"center",textTransform:"uppercase"}}>{s.label}</span>
+
+                                {/* Concept text — Gothic/Algerian fonts, always readable */}
+                                <span style={{
+                                  flex:1,
+                                  fontSize:conceptFontSize,
+                                  color:conceptTextCol,
+                                  lineHeight:isLearning?1.4:1.55,
+                                  fontFamily:conceptFontFamily,
+                                  fontWeight:isMastered?700:isLearning?400:isPracticed?600:400,
+                                  letterSpacing:isMastered?0.6:isLearning?0.3:0.2,
+                                  textShadow:isMastered?"0 0 12px rgba(16,185,129,0.35)"
+                                    :isLearning?"0 0 10px rgba(245,158,11,0.25)"
+                                    :isPracticed?`0 0 10px ${col}40`
+                                    :"none",
+                                }}>
+                                  {concept}
+                                </span>
+
+                                {/* Status pill label */}
+                                <span style={{
+                                  flexShrink:0,
+                                  fontSize:8,fontWeight:800,
+                                  fontFamily:"'Josefin Sans',sans-serif",
+                                  letterSpacing:1.2,
+                                  textTransform:"uppercase",
+                                  color:isMastered?"#10b981":isPracticed?col:isLearning?"#f59e0b":"rgba(180,176,210,0.5)",
+                                  background:isMastered?"rgba(16,185,129,0.14)"
+                                    :isPracticed?`${col}1a`
+                                    :isLearning?"rgba(245,158,11,0.14)"
+                                    :"rgba(255,255,255,0.04)",
+                                  border:`1px solid ${isMastered?"rgba(16,185,129,0.3)":isPracticed?`${col}30`:isLearning?"rgba(245,158,11,0.28)":"rgba(255,255,255,0.08)"}`,
+                                  padding:"3px 7px",
+                                  borderRadius:6,
+                                  alignSelf:"center",
+                                }}>
+                                  {isMastered?"✦ "+s.label:s.label}
+                                </span>
                               </div>
                             );
                           })}
@@ -3834,7 +4005,7 @@ function StatCounter({val,col,label,icon,delay=0}){
 function ChapRow({c,p,sub,idx}){
   const [entered,setEntered]=useState(false);
   useEffect(()=>{const t=setTimeout(()=>setEntered(true),idx*40+200);return()=>clearTimeout(t);},[idx]);
-  const colMap={math:"#818cf8",physics:"#fb923c",chemistry:"#10b981"};
+  const colMap={math:"#818cf8",physics:"#fb923c",chem:"#10b981"};
   const col=colMap[c.sub]||"#818cf8";
   return(
     <div style={{
@@ -3893,7 +4064,7 @@ function SubjectMiniCard({subKey,sub,ts}){
   const practiced=subProgs.reduce((a,p)=>a+p.practiced,0);
   const learning=subProgs.reduce((a,p)=>a+p.learning,0);
   const pct=total?Math.round(mastered/total*100):0;
-  const colMap={math:"#818cf8",physics:"#fb923c",chemistry:"#10b981"};
+  const colMap={math:"#818cf8",physics:"#fb923c",chem:"#10b981"};
   const col=colMap[subKey]||"#818cf8";
   const subData=[
     {value:mastered,color:col},
