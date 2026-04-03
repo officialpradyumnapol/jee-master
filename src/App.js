@@ -3630,14 +3630,14 @@ function SyllabusTab({chap,ts,setTs,col}){
                             const isPracticed=status==="practiced";
                             const isUntouched=status==="untouched";
 
-                            // Dark-theme card backgrounds — NO white
+                            // Dark-theme card backgrounds — solid & readable
                             const cardBg=isMastered
-                              ?"linear-gradient(135deg,rgba(16,185,129,0.13) 0%,rgba(5,150,105,0.07) 100%)"
+                              ?"linear-gradient(135deg,rgba(16,185,129,0.28) 0%,rgba(5,150,105,0.18) 100%)"
                               :isPracticed
-                              ?`linear-gradient(135deg,${col}20 0%,${col}0a 100%)`
+                              ?`linear-gradient(135deg,${col}38 0%,${col}1e 100%)`
                               :isLearning
-                              ?"linear-gradient(135deg,rgba(245,158,11,0.14) 0%,rgba(180,110,0,0.07) 100%)"
-                              :"rgba(255,255,255,0.03)";
+                              ?"linear-gradient(135deg,rgba(245,158,11,0.28) 0%,rgba(180,110,0,0.18) 100%)"
+                              :"rgba(30,25,70,0.72)";
 
                             const cardBorder=isMastered?"rgba(16,185,129,0.35)"
                               :isPracticed?`${col}40`
@@ -3662,21 +3662,22 @@ function SyllabusTab({chap,ts,setTs,col}){
                               :isLearning?"0 2px 10px rgba(245,158,11,0.45)"
                               :"none";
 
-                            // Concept name: always clearly readable
-                            const conceptTextCol=isMastered?"#6ee7b7"
-                              :isPracticed?"#c4b5fd"
-                              :isLearning?"#fcd34d"
-                              :"#e2dff8";
+                            // Concept name: bold, vivid, always readable — Gothic/Algerian style
+                            const conceptTextCol=isMastered?"#34ffb8"
+                              :isPracticed?"#d4bbff"
+                              :isLearning?"#ffe066"
+                              :"#f0ecff";
 
+                            // ALL states: Gothic (UnifrakturMaguntia) or Cinzel Decorative (Algerian-like)
                             const conceptFontFamily=isMastered
                               ?"'Cinzel Decorative','Cinzel',serif"
                               :isLearning
                               ?"'UnifrakturMaguntia',cursive"
                               :isPracticed
-                              ?"'Cinzel Decorative','Cinzel',serif"
-                              :"'Lora',serif";
+                              ?"'UnifrakturMaguntia',cursive"
+                              :"'Cinzel Decorative','Cinzel',serif";
 
-                            const conceptFontSize=isLearning?13.5:12.5;
+                            const conceptFontSize=isLearning?13.5:13;
 
                             return(
                               <div key={ci} onClick={()=>cycleStatus(key)}
@@ -3736,12 +3737,12 @@ function SyllabusTab({chap,ts,setTs,col}){
                                   color:conceptTextCol,
                                   lineHeight:isLearning?1.4:1.55,
                                   fontFamily:conceptFontFamily,
-                                  fontWeight:isMastered?700:isLearning?400:isPracticed?600:400,
-                                  letterSpacing:isMastered?0.6:isLearning?0.3:0.2,
-                                  textShadow:isMastered?"0 0 12px rgba(16,185,129,0.35)"
-                                    :isLearning?"0 0 10px rgba(245,158,11,0.25)"
-                                    :isPracticed?`0 0 10px ${col}40`
-                                    :"none",
+                                  fontWeight:isMastered?700:isLearning?700:isPracticed?700:600,
+                                  letterSpacing:isMastered?0.8:isLearning?0.4:0.5,
+                                  textShadow:isMastered?"0 0 16px rgba(52,255,184,0.6), 0 1px 4px rgba(0,0,0,0.8)"
+                                    :isLearning?"0 0 14px rgba(255,224,102,0.55), 0 1px 4px rgba(0,0,0,0.8)"
+                                    :isPracticed?`0 0 14px ${col}80, 0 1px 4px rgba(0,0,0,0.8)`
+                                    :"0 0 12px rgba(200,190,255,0.4), 0 1px 4px rgba(0,0,0,0.8)",
                                 }}>
                                   {concept}
                                 </span>
