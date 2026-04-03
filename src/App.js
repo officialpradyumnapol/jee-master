@@ -4411,344 +4411,824 @@ function ProgressView({ts}){
 }
 
 // ── JOURNAL / CALENDAR ────────────────────────────────────────────────
+
+// ── JOURNAL CONSTANTS ────────────────────────────────────────────────────
+const DAILY_PROMPTS = [
+  "What was the toughest concept you tackled today?",
+  "Rate your focus (1–10) and what affected it most.",
+  "Which formula do you wish you'd memorized sooner?",
+  "Describe a problem that surprised you today.",
+  "What will you revise first thing tomorrow?",
+  "Which chapter is your strongest right now, and why?",
+  "What mistake did you make in a practice problem today?",
+  "List 3 things you understood today that you didn't yesterday.",
+  "Which subject needs the most attention tomorrow?",
+  "What mock test question stumped you? What did you learn?",
+  "Describe your energy levels today — how did they impact study?",
+  "What revision technique worked best for you today?",
+  "Write down 3 key formulas or concepts from today's session.",
+  "What would your perfect JEE study day look like?",
+  "How close do you feel to your JEE goal right now?",
+  "What topic are you avoiding, and why?",
+  "If you taught today's topic to a friend, how would you explain it?",
+  "What's your single biggest challenge right now?",
+  "What did you do differently today that worked well?",
+  "Set your top 3 goals for tomorrow's session.",
+  "What would you tell your past self about studying smarter?",
+  "Which concept finally clicked for you this week?",
+  "How are you managing stress and pressure this week?",
+  "What's your weakest topic — and what's your plan to conquer it?",
+  "Describe a moment today where you felt in flow.",
+  "What habit would make the biggest difference to your prep?",
+  "Rate your mock test performance this week honestly.",
+  "Which JEE topic excites you the most, and why?",
+  "What's one thing you learned today you'll never forget?",
+  "Write a pep talk for yourself for tomorrow.",
+];
+
+const MOODS = [
+  { emoji: "😫", label: "Rough",  col: "#ef4444", bg: "rgba(239,68,68,0.15)"  },
+  { emoji: "😟", label: "Low",    col: "#f97316", bg: "rgba(249,115,22,0.15)" },
+  { emoji: "😐", label: "Okay",   col: "#eab308", bg: "rgba(234,179,8,0.15)"  },
+  { emoji: "😊", label: "Good",   col: "#84cc16", bg: "rgba(132,204,22,0.15)" },
+  { emoji: "🤩", label: "Peak",   col: "#22c55e", bg: "rgba(34,197,94,0.15)"  },
+];
+
+const SUB_TAGS = [
+  { label:"Maths",     col:"#7c3aed", emoji:"∑"  },
+  { label:"Physics",   col:"#ea580c", emoji:"⚡" },
+  { label:"Chemistry", col:"#059669", emoji:"⚗" },
+  { label:"Revision",  col:"#0ea5e9", emoji:"↺" },
+  { label:"Mock Test", col:"#dc2626", emoji:"📝" },
+];
+
+const SUB_COLS = { Maths:"#7c3aed", Physics:"#ea580c", Chemistry:"#059669", Revision:"#0ea5e9", "Mock Test":"#dc2626" };
+
+// ── JOURNAL VIEW ─────────────────────────────────────────────────────────
 function JournalView(){
-  const today=new Date();
-  const [viewYear,setViewYear]=useState(today.getFullYear());
-  const [viewMonth,setViewMonth]=useState(today.getMonth());
-  const [entries,setEntries]=useState({});
-  const [selectedDay,setSelectedDay]=useState(today.getDate());
-  const [draft,setDraft]=useState("");
-  const [saving,setSaving]=useState(false);
-  const [loaded,setLoaded]=useState(false);
+  const today   = new Date();
+  const todayStr= today.toISOString().split("T")[0];
 
-  const todayStr=today.toISOString().split("T")[0];
+  // Storage shape: { "YYYY-MM-DD": { text, mood, hours } }
+  const [jTab,   setJTab]   = useState("write"); // "write"|"insights"|"history"
+  const [viewYear,setViewYear] = useState(today.getFullYear());
+  const [viewMonth,setViewMonth] = useState(today.getMonth());
+  const [entries, setEntries] = useState({});
+  const [selDay,  setSelDay]  = useState(today.getDate());
+  const [draft,   setDraft]   = useState("");
+  const [mood,    setMood]    = useState(null);   // 1-5
+  const [hours,   setHours]   = useState(0);
+  const [saving,  setSaving]  = useState(false);
+  const [loaded,  setLoaded]  = useState(false);
+  const [hSearch, setHSearch] = useState("");
+  const [showPrompt, setShowPrompt] = useState(true);
 
-  // Calendar math — must come before selectedStr which depends on safeSelectedDay
   const monthNames=["January","February","March","April","May","June","July","August","September","October","November","December"];
-  const dayNames=["Su","Mo","Tu","We","Th","Fr","Sa"];
-  const firstDay=new Date(viewYear,viewMonth,1).getDay();
-  const daysInMonth=new Date(viewYear,viewMonth+1,0).getDate();
-  // Clamp selectedDay to valid range for current month (prevents blank calendar)
-  const safeSelectedDay=Math.min(Math.max(selectedDay,1),daysInMonth);
+  const dayNames  =["Su","Mo","Tu","We","Th","Fr","Sa"];
+  const firstDay  = new Date(viewYear,viewMonth,1).getDay();
+  const daysInMon = new Date(viewYear,viewMonth+1,0).getDate();
+  const safeSelDay= Math.min(Math.max(selDay,1),daysInMon);
+  const selStr    = `${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(safeSelDay).padStart(2,"0")}`;
 
-  const selectedStr=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(safeSelectedDay).padStart(2,"0")}`;
+  // Deterministic daily prompt
+  const dayOfYear = Math.floor((today - new Date(today.getFullYear(),0,0))/86400000);
+  const todayPrompt = DAILY_PROMPTS[dayOfYear % DAILY_PROMPTS.length];
 
-  // Load all journal entries from storage
+  // ── Load ──
   useEffect(()=>{
     async function load(){
       try{
-        const r=await window.storage.get("jee_journal_v1");
-        if(r&&r.value)setEntries(JSON.parse(r.value));
+        // Try v2 first
+        const r2 = await window.storage.get("jee_journal_v2");
+        if(r2&&r2.value){
+          const parsed = JSON.parse(r2.value);
+          // Ensure all values are objects (migrate stray strings)
+          const safe={};
+          for(const[k,v] of Object.entries(parsed)){
+            safe[k] = typeof v==="string"?{text:v,mood:null,hours:0}:v;
+          }
+          setEntries(safe);
+        } else {
+          // Try migrate from v1
+          try{
+            const r1 = await window.storage.get("jee_journal_v1");
+            if(r1&&r1.value){
+              const old=JSON.parse(r1.value);
+              const migrated={};
+              for(const[k,v] of Object.entries(old)){
+                migrated[k]={text:typeof v==="string"?v:(v?.text||""),mood:null,hours:0};
+              }
+              setEntries(migrated);
+            }
+          }catch(e){}
+        }
       }catch(e){}
       setLoaded(true);
     }
     load();
   },[]);
 
-  // When selected day changes, populate draft
+  // ── Populate fields when day changes ──
   useEffect(()=>{
-    if(loaded)setDraft(entries[selectedStr]||"");
-  },[selectedStr,loaded,entries]);
+    if(!loaded)return;
+    const e=entries[selStr];
+    setDraft(e?.text||"");
+    setMood(e?.mood??null);
+    setHours(e?.hours??0);
+  },[selStr,loaded,entries]);
 
   async function saveEntry(){
     setSaving(true);
     const updated={...entries};
-    if(draft.trim()){updated[selectedStr]=draft.trim();}
-    else{delete updated[selectedStr];}
+    if(draft.trim()||mood!==null||hours>0){
+      updated[selStr]={text:draft.trim(),mood,hours};
+    } else {
+      delete updated[selStr];
+    }
     setEntries(updated);
-    try{await window.storage.set("jee_journal_v1",JSON.stringify(updated));}catch(e){}
-    setTimeout(()=>setSaving(false),600);
+    try{ await window.storage.set("jee_journal_v2",JSON.stringify(updated)); }catch(e){}
+    setTimeout(()=>setSaving(false),800);
   }
 
+  // Calendar helpers
   const cells=[];
   for(let i=0;i<firstDay;i++)cells.push(null);
-  for(let d=1;d<=daysInMonth;d++)cells.push(d);
+  for(let d=1;d<=daysInMon;d++)cells.push(d);
 
   function prevMonth(){
-    const newM = viewMonth === 0 ? 11 : viewMonth - 1;
-    const newY = viewMonth === 0 ? viewYear - 1 : viewYear;
-    const daysInNew = new Date(newY, newM + 1, 0).getDate();
-    setViewMonth(newM);
-    setViewYear(newY);
-    setSelectedDay(sd => Math.min(sd, daysInNew));
+    const m=viewMonth===0?11:viewMonth-1, y=viewMonth===0?viewYear-1:viewYear;
+    setViewMonth(m); setViewYear(y);
+    setSelDay(sd=>Math.min(sd,new Date(y,m+1,0).getDate()));
   }
   function nextMonth(){
-    const newM = viewMonth === 11 ? 0 : viewMonth + 1;
-    const newY = viewMonth === 11 ? viewYear + 1 : viewYear;
-    const daysInNew = new Date(newY, newM + 1, 0).getDate();
-    setViewMonth(newM);
-    setViewYear(newY);
-    setSelectedDay(sd => Math.min(sd, daysInNew));
+    const m=viewMonth===11?0:viewMonth+1, y=viewMonth===11?viewYear+1:viewYear;
+    setViewMonth(m); setViewYear(y);
+    setSelDay(sd=>Math.min(sd,new Date(y,m+1,0).getDate()));
   }
 
-  const isToday=(d)=>d===today.getDate()&&viewMonth===today.getMonth()&&viewYear===today.getFullYear();
-  const isSelected=(d)=>d===safeSelectedDay;
-  const hasEntry=(d)=>{
-    const key=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
-    return !!entries[key];
+  const isToday  = d=>d===today.getDate()&&viewMonth===today.getMonth()&&viewYear===today.getFullYear();
+  const isSel    = d=>d===safeSelDay;
+  const getEntry = d=>{
+    const k=`${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(d).padStart(2,"0")}`;
+    return entries[k];
   };
 
-  // Count streaks / stats
-  const totalEntries=Object.keys(entries).length;
-  const thisMonthEntries=Object.keys(entries).filter(k=>k.startsWith(`${viewYear}-${String(viewMonth+1).padStart(2,"0")}`)).length;
-  const selectedEntry=entries[selectedStr];
+  // ── Stats / Computed ──
+  const totalEntries = Object.keys(entries).length;
+  const monthEntries = Object.keys(entries).filter(k=>k.startsWith(`${viewYear}-${String(viewMonth+1).padStart(2,"0")}`)).length;
+  const totalHours   = Object.values(entries).reduce((s,e)=>s+(e?.hours||0),0);
 
-  const subjectTags=[
-    {label:"Maths",col:"#7c3aed",emoji:"∑"},
-    {label:"Physics",col:"#ea580c",emoji:"⚡"},
-    {label:"Chemistry",col:"#059669",emoji:"⚗"},
-    {label:"Revision",col:"#0ea5e9",emoji:"↺"},
-    {label:"Mock Test",col:"#dc2626",emoji:"📝"},
-  ];
+  const streak = useMemo(()=>{
+    let s=0; const d=new Date(todayStr+"T12:00:00");
+    while(true){ const k=d.toISOString().split("T")[0]; if(!entries[k])break; s++; d.setDate(d.getDate()-1); }
+    return s;
+  },[entries]);
 
-  function insertTag(tag){
-    setDraft(d=>(d?d+"\n":"")+`[${tag}] `);
-  }
+  const subFreq = useMemo(()=>{
+    const f={Maths:0,Physics:0,Chemistry:0,Revision:0,"Mock Test":0};
+    for(const e of Object.values(entries)){
+      const t=e?.text||"";
+      for(const tag of Object.keys(f)){
+        f[tag]+=(t.match(new RegExp(`\\[${tag}\\]`,"gi"))||[]).length;
+      }
+    }
+    return f;
+  },[entries]);
 
-  // Premium dark navy + gold calendar palette (inspired by Kanji midnight+oldmoney)
-  const CAL={
-    bg:"linear-gradient(160deg,#0a0e1f 0%,#0f1535 50%,#141a40 100%)",
-    card:"linear-gradient(155deg,rgba(20,26,60,0.97),rgba(28,34,76,0.95))",
-    cardLight:"linear-gradient(155deg,rgba(24,30,68,0.92),rgba(18,24,54,0.9))",
-    border:"rgba(212,175,55,0.22)",
-    borderMed:"rgba(212,175,55,0.42)",
-    accent:"#D4AF37",
-    accentLight:"#F0D060",
-    accentSoft:"rgba(212,175,55,0.12)",
-    text:"#F0E6C8",
-    subtext:"rgba(212,175,55,0.8)",
-    dim:"rgba(212,175,55,0.45)",
-    shadow:"0 4px 24px rgba(0,0,0,0.5)",
-    shadowGold:"0 4px 24px rgba(212,175,55,0.18)",
-    selBg:"linear-gradient(135deg,#8B6914,#D4AF37)",
-    todayBg:"rgba(212,175,55,0.18)",
-    dotColor:"#D4AF37",
+  const last7Hours = useMemo(()=>Array.from({length:7},(_,i)=>{
+    const d=new Date(); d.setDate(d.getDate()-(6-i));
+    const k=d.toISOString().split("T")[0];
+    return{day:["Su","Mo","Tu","We","Th","Fr","Sa"][d.getDay()],hours:entries[k]?.hours||0,isToday:k===todayStr};
+  }),[entries]);
+
+  const last14Moods = useMemo(()=>Array.from({length:14},(_,i)=>{
+    const d=new Date(); d.setDate(d.getDate()-(13-i));
+    const k=d.toISOString().split("T")[0];
+    return{key:k,mood:entries[k]?.mood??null,isToday:k===todayStr};
+  }),[entries]);
+
+  const avgMood = useMemo(()=>{
+    const ms=Object.values(entries).map(e=>e?.mood).filter(m=>m!=null);
+    return ms.length?(ms.reduce((s,m)=>s+m,0)/ms.length).toFixed(1):null;
+  },[entries]);
+
+  const wordCount = draft.trim()? draft.trim().split(/\s+/).length : 0;
+
+  // ── PALETTE ──
+  const C = {
+    bg:          "linear-gradient(160deg,#080b1c 0%,#0d1230 50%,#111840 100%)",
+    card:        "linear-gradient(150deg,rgba(18,24,56,0.97),rgba(24,32,72,0.95))",
+    cardAlt:     "rgba(14,20,48,0.9)",
+    border:      "rgba(212,175,55,0.2)",
+    borderBright:"rgba(212,175,55,0.45)",
+    gold:        "#D4AF37",
+    goldLight:   "#F0D060",
+    goldSoft:    "rgba(212,175,55,0.1)",
+    goldMed:     "rgba(212,175,55,0.2)",
+    text:        "#F0E6C8",
+    sub:         "rgba(212,175,55,0.75)",
+    dim:         "rgba(212,175,55,0.4)",
+    shadow:      "0 6px 32px rgba(0,0,0,0.55)",
+    glow:        "0 4px 24px rgba(212,175,55,0.15)",
+    selBg:       "linear-gradient(135deg,#8B6914,#D4AF37)",
+    todayBg:     "rgba(212,175,55,0.16)",
   };
 
-  return(
-    <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",
-      background:CAL.bg, gap:0}}>
+  // ── Shared small components ──
+  const SectionLabel = ({children})=>(
+    <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+      color:C.dim,letterSpacing:2.5,marginBottom:9,textTransform:"uppercase"}}>
+      ✦ {children}
+    </div>
+  );
 
-      {/* Premium header */}
-      <div style={{
-        background:"linear-gradient(135deg,#080C1E 0%,#111630 50%,#1A2050 100%)",
-        padding:"20px 18px 22px",flexShrink:0,
-        borderBottom:`1px solid ${CAL.border}`,
-        boxShadow:"0 4px 24px rgba(0,0,0,0.6)",
-        position:"relative",overflow:"hidden",
-      }}>
-        <div style={{position:"absolute",top:-40,right:-30,width:160,height:160,borderRadius:"50%",
-          background:"radial-gradient(circle,rgba(212,175,55,0.12),transparent 70%)",pointerEvents:"none"}}/>
-        <div style={{position:"absolute",bottom:-20,left:-10,width:100,height:100,borderRadius:"50%",
-          background:"radial-gradient(circle,rgba(212,175,55,0.07),transparent 70%)",pointerEvents:"none"}}/>
-        <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
-          color:CAL.dim,letterSpacing:3,marginBottom:4}}>✦ STUDY JOURNAL</div>
-        <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:30,letterSpacing:2,
-          color:CAL.accentLight,lineHeight:1,
-          textShadow:"0 0 20px rgba(212,175,55,0.4)"}}>
-          {monthNames[viewMonth].toUpperCase()} {viewYear}
-        </div>
+  const Card = ({children,style={}})=>(
+    <div style={{background:C.card,borderRadius:20,padding:"16px",
+      border:`1px solid ${C.border}`,boxShadow:C.shadow,...style}}>
+      {children}
+    </div>
+  );
+
+  // ══════════════════════════════════════════════
+  //  WRITE TAB
+  // ══════════════════════════════════════════════
+  const WriteTab=(
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+
+      {/* ── Stats row (4 cols) ── */}
+      <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:6}}>
+        {[
+          {label:"Total",   val:totalEntries,          col:C.gold},
+          {label:"Month",   val:monthEntries,           col:C.goldLight},
+          {label:"Streak",  val:`${streak}🔥`,          col:"#fbbf24"},
+          {label:"Hours",   val:`${totalHours.toFixed(0)}h`, col:"#6ee7b7"},
+        ].map((s,i)=>(
+          <div key={i} style={{background:C.card,borderRadius:12,padding:"10px 6px",
+            border:`1px solid ${C.border}`,textAlign:"center",boxShadow:C.glow}}>
+            <div style={{fontSize:17,fontWeight:900,color:s.col,
+              fontFamily:"'Bebas Neue',sans-serif",letterSpacing:0.5,lineHeight:1.1}}>{s.val}</div>
+            <div style={{fontSize:8,color:C.dim,marginTop:2,letterSpacing:1,
+              fontFamily:"'Josefin Sans',sans-serif",fontWeight:700}}>{s.label}</div>
+          </div>
+        ))}
       </div>
 
-      <div style={{padding:"14px 14px 24px",display:"flex",flexDirection:"column",gap:12}}>
-
-        {/* Header Stats — gold accented */}
-        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8}}>
-          {[
-            {label:"Total Entries",val:totalEntries,icon:"📔",col:CAL.accent},
-            {label:"This Month",val:thisMonthEntries,icon:"📅",col:CAL.accentLight},
-            {label:"Today",val:entries[todayStr]?"✓":"—",icon:"✨",col:"#6ee7b7"},
-          ].map((s,i)=>(
-            <div key={i} style={{background:CAL.card,borderRadius:14,padding:"12px 10px",
-              border:`1px solid ${CAL.border}`,boxShadow:CAL.shadowGold,textAlign:"center",
-              backdropFilter:"blur(8px)"}}>
-              <div style={{fontSize:18,marginBottom:4}}>{s.icon}</div>
-              <div style={{fontSize:20,fontWeight:900,color:s.col,letterSpacing:-0.5,
-                fontFamily:"'Bebas Neue',sans-serif"}}>{s.val}</div>
-              <div style={{fontSize:9,color:CAL.dim,fontWeight:700,marginTop:2,
-                letterSpacing:0.5,fontFamily:"'Josefin Sans',sans-serif"}}>{s.label.toUpperCase()}</div>
-            </div>
+      {/* ── Calendar ── */}
+      <Card>
+        {/* Month nav */}
+        <div style={{display:"flex",alignItems:"center",marginBottom:12}}>
+          <button onClick={prevMonth}
+            style={{width:32,height:32,borderRadius:9,border:`1px solid ${C.border}`,
+              background:C.goldSoft,cursor:"pointer",fontSize:16,color:C.gold,
+              display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>‹</button>
+          <div style={{flex:1,textAlign:"center",fontFamily:"'Cinzel',sans-serif",fontSize:14,
+            color:C.goldLight,letterSpacing:2}}>{monthNames[viewMonth].toUpperCase()} {viewYear}</div>
+          <button onClick={nextMonth}
+            style={{width:32,height:32,borderRadius:9,border:`1px solid ${C.border}`,
+              background:C.goldSoft,cursor:"pointer",fontSize:16,color:C.gold,
+              display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>›</button>
+        </div>
+        {/* Day labels */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:5}}>
+          {dayNames.map(d=>(
+            <div key={d} style={{textAlign:"center",fontSize:9,fontWeight:800,color:C.dim,
+              fontFamily:"'Josefin Sans',sans-serif",letterSpacing:0.8}}>{d}</div>
           ))}
         </div>
+        {/* Cells — heatmap intensity by word count */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:3}}>
+          {cells.map((d,i)=>{
+            if(!d)return<div key={i}/>;
+            const sel=isSel(d), tod=isToday(d);
+            const ent=getEntry(d);
+            const wc=ent?.text? ent.text.trim().split(/\s+/).length : 0;
+            const intensity= wc>150?0.55: wc>80?0.4: wc>30?0.25: wc>0?0.14: 0;
+            const moodCol = ent?.mood!=null? MOODS[ent.mood-1]?.col : null;
+            return(
+              <div key={i} onClick={()=>setSelDay(d)}
+                className="cal-day-3d"
+                style={{
+                  aspectRatio:"1",borderRadius:8,
+                  display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
+                  cursor:"pointer",position:"relative",
+                  background: sel? C.selBg : tod? C.todayBg : ent? `rgba(212,175,55,${intensity})` : "transparent",
+                  border: sel?`1px solid ${C.gold}`:tod?`1px solid rgba(212,175,55,0.4)`:`1px solid transparent`,
+                  boxShadow: sel?"0 2px 14px rgba(212,175,55,0.38)":tod?"0 0 8px rgba(212,175,55,0.14)":"none",
+                  transition:"all .15s",
+                }}
+                onMouseEnter={e=>{if(!sel)e.currentTarget.style.background="rgba(212,175,55,0.13)";}}
+                onMouseLeave={e=>{if(!sel)e.currentTarget.style.background=tod?C.todayBg:ent?`rgba(212,175,55,${intensity})`:"transparent";}}>
+                <span style={{fontSize:11,fontWeight:sel||tod?800:400,lineHeight:1,
+                  color:sel?"#fff":tod?C.goldLight:C.text,
+                  fontFamily:sel||tod?"'Josefin Sans',sans-serif":"inherit"}}>
+                  {d}
+                </span>
+                {ent&&(
+                  <div style={{width:4,height:4,borderRadius:"50%",marginTop:1,
+                    background: sel?"rgba(255,255,255,0.9)": moodCol||C.gold,
+                    boxShadow: sel?"none":`0 0 5px ${moodCol||C.gold}`}}/>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {/* Jump to today */}
+        {(viewMonth!==today.getMonth()||viewYear!==today.getFullYear())&&(
+          <button onClick={()=>{setViewMonth(today.getMonth());setViewYear(today.getFullYear());setSelDay(today.getDate());}}
+            style={{marginTop:12,width:"100%",padding:"7px",borderRadius:9,
+              border:`1px solid ${C.borderBright}`,background:C.goldSoft,
+              color:C.gold,fontSize:10,fontWeight:800,cursor:"pointer",
+              fontFamily:"'Josefin Sans',sans-serif",letterSpacing:1}}>
+            ✦ JUMP TO TODAY
+          </button>
+        )}
+      </Card>
 
-        {/* Calendar Card — premium dark */}
-        <div style={{background:CAL.card,borderRadius:20,padding:"18px 16px",
-          border:`1px solid ${CAL.border}`,boxShadow:CAL.shadowGold,backdropFilter:"blur(12px)"}}>
+      {/* ── Daily Writing Prompt ── */}
+      {showPrompt&&(
+        <div style={{background:"linear-gradient(135deg,rgba(212,175,55,0.07),rgba(18,24,56,0.95))",
+          borderRadius:18,padding:"14px 16px",border:`1px solid ${C.border}`,
+          position:"relative",overflow:"hidden"}}>
+          <div style={{position:"absolute",top:-30,right:-20,width:100,height:100,borderRadius:"50%",
+            background:"radial-gradient(circle,rgba(212,175,55,0.1),transparent 70%)",pointerEvents:"none"}}/>
+          <button onClick={()=>setShowPrompt(false)}
+            style={{position:"absolute",top:10,right:12,background:"none",border:"none",
+              color:C.dim,cursor:"pointer",fontSize:14}}>×</button>
+          <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+            color:C.dim,letterSpacing:2,marginBottom:7}}>✦ TODAY'S PROMPT</div>
+          <div style={{fontSize:13,color:C.text,fontFamily:"'Lora',serif",fontStyle:"italic",lineHeight:1.65}}>
+            "{todayPrompt}"
+          </div>
+          <button onClick={()=>{setDraft(d=>(d?d+"\n\n":"")+`Prompt: ${todayPrompt}\n`); setShowPrompt(false);}}
+            style={{marginTop:9,padding:"5px 14px",borderRadius:8,border:`1px solid ${C.border}`,
+              background:"transparent",color:C.dim,fontSize:9,fontWeight:700,cursor:"pointer",
+              fontFamily:"'Josefin Sans',sans-serif",letterSpacing:1}}>
+            INSERT PROMPT →
+          </button>
+        </div>
+      )}
 
-          {/* Month Nav */}
-          <div style={{display:"flex",alignItems:"center",marginBottom:18}}>
-            <button onClick={prevMonth}
-              style={{width:36,height:36,borderRadius:10,border:`1px solid ${CAL.border}`,
-                background:CAL.accentSoft,cursor:"pointer",fontSize:18,color:CAL.accent,
-                display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>‹</button>
-            <div style={{flex:1,textAlign:"center"}}>
-              <div style={{fontFamily:"'Cinzel',sans-serif",fontSize:18,color:CAL.accentLight,
-                letterSpacing:2}}>{monthNames[viewMonth].toUpperCase()} {viewYear}</div>
+      {/* ── Entry Card ── */}
+      <Card>
+        {/* Header */}
+        <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
+          <div>
+            <div style={{fontSize:14,fontWeight:900,color:C.goldLight,fontFamily:"'Lora',serif",lineHeight:1.2}}>
+              {selStr===todayStr?"Today's Entry":
+                new Date(selStr+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}
             </div>
-            <button onClick={nextMonth}
-              style={{width:36,height:36,borderRadius:10,border:`1px solid ${CAL.border}`,
-                background:CAL.accentSoft,cursor:"pointer",fontSize:18,color:CAL.accent,
-                display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>›</button>
+            <div style={{fontSize:9,color:C.dim,marginTop:2,fontFamily:"'Josefin Sans',sans-serif",letterSpacing:0.5}}>{selStr}</div>
           </div>
-
-          {/* Day names — gold */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:2,marginBottom:6}}>
-            {dayNames.map(d=>(
-              <div key={d} style={{textAlign:"center",fontSize:10,fontWeight:800,color:CAL.dim,
-                padding:"2px 0",letterSpacing:0.8,fontFamily:"'Josefin Sans',sans-serif"}}>{d}</div>
-            ))}
-          </div>
-
-          {/* Date cells */}
-          <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
-            {cells.map((d,i)=>{
-              if(!d)return<div key={i}/>;
-              const sel=isSelected(d);
-              const tod=isToday(d);
-              const has=hasEntry(d);
-              return(
-                <div key={i} onClick={()=>setSelectedDay(d)}
-                  style={{
-                    aspectRatio:"1",
-                    borderRadius:10,
-                    display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",
-                    cursor:"pointer",position:"relative",
-                    background:sel?CAL.selBg:tod?CAL.todayBg:"transparent",
-                    border:sel?`1px solid ${CAL.accent}`:tod?`1px solid rgba(212,175,55,0.4)`:`1px solid transparent`,
-                    transition:"all .15s",
-                    boxShadow:sel?"0 2px 12px rgba(212,175,55,0.35)":tod?"0 0 8px rgba(212,175,55,0.15)":"none",
-                  }}
-                  onMouseEnter={e=>{if(!sel)e.currentTarget.style.background="rgba(212,175,55,0.1)";}}
-                  onMouseLeave={e=>{if(!sel)e.currentTarget.style.background=tod?CAL.todayBg:"transparent";}}>
-                  <span style={{fontSize:12,fontWeight:sel||tod?800:400,
-                    color:sel?"#fff":tod?CAL.accentLight:CAL.text,lineHeight:1,
-                    fontFamily:sel||tod?"'Josefin Sans',sans-serif":"inherit"}}>
-                    {d}
-                  </span>
-                  {has&&(
-                    <div style={{width:4,height:4,borderRadius:"50%",marginTop:2,
-                      background:sel?"rgba(255,255,255,0.9)":CAL.accent,
-                      boxShadow:sel?"none":`0 0 4px ${CAL.accent}`}}/>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Jump to today */}
-          {(viewMonth!==today.getMonth()||viewYear!==today.getFullYear())&&(
-            <button onClick={()=>{setViewMonth(today.getMonth());setViewYear(today.getFullYear());setSelectedDay(today.getDate());}}
-              style={{marginTop:14,width:"100%",padding:"8px",borderRadius:10,
-                border:`1px solid ${CAL.borderMed}`,background:CAL.accentSoft,
-                color:CAL.accent,fontSize:11,fontWeight:800,cursor:"pointer",
-                fontFamily:"'Josefin Sans',sans-serif",letterSpacing:1}}>
-              ✦ JUMP TO TODAY
-            </button>
+          {entries[selStr]&&(
+            <div style={{fontSize:10,fontWeight:700,color:"#6ee7b7",background:"rgba(110,231,183,0.1)",
+              padding:"3px 10px",borderRadius:20,border:"1px solid rgba(110,231,183,0.22)"}}>✓ Saved</div>
           )}
         </div>
 
-        {/* Journal Entry — premium dark */}
-        <div style={{background:CAL.card,borderRadius:20,padding:"18px 16px",
-          border:`1px solid ${CAL.border}`,boxShadow:CAL.shadow,backdropFilter:"blur(12px)"}}>
-
-          {/* Entry header */}
-          <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:12}}>
-            <div>
-              <div style={{fontSize:14,fontWeight:900,color:CAL.accentLight,letterSpacing:-0.3,
-                fontFamily:"'Lora',serif"}}>
-                {selectedStr===todayStr?"Today's Entry":
-                  new Date(selectedStr+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"})}
-              </div>
-              <div style={{fontSize:10,color:CAL.dim,marginTop:2,fontWeight:500,
-                fontFamily:"'Josefin Sans',sans-serif",letterSpacing:0.5}}>{selectedStr}</div>
-            </div>
-            {selectedEntry&&(
-              <div style={{fontSize:10,fontWeight:700,color:"#6ee7b7",
-                background:"rgba(110,231,183,0.12)",padding:"3px 10px",borderRadius:20,
-                border:"1px solid rgba(110,231,183,0.25)"}}>
-                ✓ Saved
-              </div>
-            )}
-          </div>
-
-          {/* Quick Tags */}
-          <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:10}}>
-            {subjectTags.map(t=>(
-              <button key={t.label} onClick={()=>insertTag(t.label)}
-                style={{padding:"4px 10px",borderRadius:8,border:`1px solid ${CAL.border}`,
-                  background:CAL.accentSoft,color:CAL.accent,fontSize:10.5,fontWeight:700,cursor:"pointer",
-                  transition:"all .15s",fontFamily:"'Josefin Sans',sans-serif",letterSpacing:0.5}}
-                onMouseEnter={e=>{e.currentTarget.style.background="rgba(212,175,55,0.2)";e.currentTarget.style.borderColor=CAL.accentLight;}}
-                onMouseLeave={e=>{e.currentTarget.style.background=CAL.accentSoft;e.currentTarget.style.borderColor=CAL.border;}}>
-                {t.emoji} {t.label}
+        {/* ── Mood Picker ── */}
+        <SectionLabel>How's your mood?</SectionLabel>
+        <div style={{display:"flex",gap:6,marginBottom:14}}>
+          {MOODS.map((m,idx)=>{
+            const v=idx+1, sel=mood===v;
+            return(
+              <button key={idx} onClick={()=>setMood(sel?null:v)}
+                style={{flex:1,padding:"8px 2px",borderRadius:12,
+                  border:`1.5px solid ${sel?m.col:C.border}`,
+                  background:sel?m.bg:"transparent",
+                  cursor:"pointer",display:"flex",flexDirection:"column",alignItems:"center",gap:2,
+                  transition:"all .18s",transform:sel?"scale(1.1)":"scale(1)",
+                  boxShadow:sel?`0 0 12px ${m.col}55`:"none"}}>
+                <span style={{fontSize:20,filter:sel?"none":"grayscale(0.5) opacity(0.7)"}}>{m.emoji}</span>
+                <span style={{fontSize:7.5,color:sel?m.col:C.dim,fontFamily:"'Josefin Sans',sans-serif",
+                  fontWeight:700,letterSpacing:0.5}}>{m.label}</span>
               </button>
-            ))}
-          </div>
+            );
+          })}
+        </div>
 
-          {/* Textarea — dark styled */}
+        {/* ── Study Hours Stepper ── */}
+        <SectionLabel>Study hours today</SectionLabel>
+        <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
+          <button onClick={()=>setHours(h=>Math.max(0,parseFloat((h-0.5).toFixed(1))))}
+            style={{width:34,height:34,borderRadius:9,border:`1px solid ${C.border}`,
+              background:C.goldSoft,color:C.gold,fontSize:20,cursor:"pointer",
+              display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>−</button>
+          <div style={{flex:1}}>
+            <div style={{textAlign:"center"}}>
+              <span style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:30,color:C.goldLight,letterSpacing:1,lineHeight:1}}>
+                {hours.toFixed(1)}
+              </span>
+              <span style={{fontSize:11,color:C.dim,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,marginLeft:4}}>hrs</span>
+            </div>
+            <div style={{height:5,background:"rgba(212,175,55,0.1)",borderRadius:99,overflow:"hidden",marginTop:5}}>
+              <div style={{height:"100%",width:`${Math.min((hours/12)*100,100)}%`,
+                background:`linear-gradient(90deg,${C.gold},${C.goldLight})`,
+                borderRadius:99,transition:"width .35s ease",boxShadow:"0 0 6px rgba(212,175,55,0.4)"}}/>
+            </div>
+          </div>
+          <button onClick={()=>setHours(h=>Math.min(16,parseFloat((h+0.5).toFixed(1))))}
+            style={{width:34,height:34,borderRadius:9,border:`1px solid ${C.border}`,
+              background:C.goldSoft,color:C.gold,fontSize:20,cursor:"pointer",
+              display:"flex",alignItems:"center",justifyContent:"center",fontWeight:700}}>+</button>
+        </div>
+
+        {/* ── Quick Subject Tags ── */}
+        <SectionLabel>Quick tags</SectionLabel>
+        <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>
+          {SUB_TAGS.map(t=>(
+            <button key={t.label} onClick={()=>setDraft(d=>(d?d+"\n":"")+`[${t.label}] `)}
+              style={{padding:"4px 11px",borderRadius:8,border:`1px solid ${C.border}`,
+                background:C.goldSoft,color:C.gold,fontSize:10,fontWeight:700,cursor:"pointer",
+                fontFamily:"'Josefin Sans',sans-serif",letterSpacing:0.4,transition:"all .14s"}}
+              onMouseEnter={e=>{e.currentTarget.style.background=C.goldMed;e.currentTarget.style.borderColor=C.borderBright;}}
+              onMouseLeave={e=>{e.currentTarget.style.background=C.goldSoft;e.currentTarget.style.borderColor=C.border;}}>
+              {t.emoji} {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Textarea ── */}
+        <div style={{position:"relative"}}>
           <textarea
             value={draft}
             onChange={e=>setDraft(e.target.value)}
-            placeholder={`What did you study today?\n\nE.g.\n[Maths] Completed Limits chapter\n[Physics] Revised Electrostatics\n[Mock Test] Scored 180/300`}
-            style={{
-              width:"100%",minHeight:180,padding:"12px 14px",
-              borderRadius:12,border:`1.5px solid ${CAL.border}`,
-              background:"rgba(8,12,30,0.7)",fontSize:13,color:CAL.text,
-              lineHeight:1.7,outline:"none",resize:"vertical",
-              boxSizing:"border-box",fontFamily:"'Lora',serif",
-              transition:"border-color .15s",
-            }}
-            onFocus={e=>e.target.style.borderColor=CAL.accent}
-            onBlur={e=>e.target.style.borderColor=CAL.border}/>
-
-          {/* Save Button */}
-          <button onClick={saveEntry}
-            style={{marginTop:10,width:"100%",padding:"12px",borderRadius:12,border:"none",
-              background:saving?"linear-gradient(135deg,#065f46,#059669)":"linear-gradient(135deg,#8B6914,#D4AF37,#F0D060)",
-              color:saving?"#fff":"#080C1E",fontSize:13,fontWeight:900,cursor:"pointer",
-              letterSpacing:1,transition:"all .2s",fontFamily:"'Josefin Sans',sans-serif",
-              boxShadow:saving?"0 2px 8px rgba(5,150,105,.3)":"0 3px 16px rgba(212,175,55,.4)"}}>
-            {saving?"✓ SAVED!":"✦ SAVE ENTRY"}
-          </button>
+            placeholder={`What did you study today?\n\nE.g.\n[Maths] Completed Integration — finally clicked!\n[Physics] Revised Electromagnetic Induction\n[Mock Test] Scored 210/300 — Maths was strong`}
+            style={{width:"100%",minHeight:170,padding:"12px 14px 28px",
+              borderRadius:12,border:`1.5px solid ${C.border}`,
+              background:"rgba(6,9,20,0.75)",fontSize:13,color:C.text,
+              lineHeight:1.75,outline:"none",resize:"vertical",
+              boxSizing:"border-box",fontFamily:"'Lora',serif",transition:"border-color .15s"}}
+            onFocus={e=>e.target.style.borderColor=C.gold}
+            onBlur={e=>e.target.style.borderColor=C.border}/>
+          {wordCount>0&&(
+            <div style={{position:"absolute",bottom:8,right:12,fontSize:9,color:C.dim,
+              fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,pointerEvents:"none"}}>
+              {wordCount} words
+            </div>
+          )}
         </div>
 
-        {/* Recent entries — dark gold */}
-        {Object.keys(entries).length>0&&(
-          <div style={{background:CAL.card,borderRadius:20,padding:"16px",
-            border:`1px solid ${CAL.border}`,boxShadow:CAL.shadow,backdropFilter:"blur(12px)"}}>
-            <div style={{fontSize:13,fontWeight:800,color:CAL.accentLight,marginBottom:12,letterSpacing:0.5,
-              fontFamily:"'Josefin Sans',sans-serif",display:"flex",alignItems:"center",gap:8}}>
-              <span style={{color:CAL.accent}}>✦</span> RECENT ENTRIES
-            </div>
-            {Object.entries(entries)
-              .sort((a,b)=>b[0].localeCompare(a[0]))
-              .slice(0,5)
-              .map(([date,text])=>(
-              <div key={date}
-                onClick={()=>{
-                  const d=new Date(date+"T12:00:00");
-                  setViewYear(d.getFullYear());setViewMonth(d.getMonth());setSelectedDay(d.getDate());
-                  window.scrollTo(0,0);
-                }}
-                style={{padding:"10px 12px",borderRadius:11,marginBottom:6,
-                  border:`1px solid ${CAL.border}`,cursor:"pointer",transition:"all .15s",
-                  background:"rgba(212,175,55,0.04)"}}
-                onMouseEnter={e=>{e.currentTarget.style.background=CAL.accentSoft;e.currentTarget.style.borderColor=CAL.borderMed;}}
-                onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,175,55,0.04)";e.currentTarget.style.borderColor=CAL.border;}}>
-                <div style={{fontSize:11,fontWeight:800,color:CAL.accent,marginBottom:3,
-                  fontFamily:"'Josefin Sans',sans-serif",letterSpacing:0.5}}>
-                  {new Date(date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"})}
-                  {date===todayStr&&<span style={{marginLeft:6,fontSize:9,background:`${CAL.accent}20`,color:CAL.accentLight,
-                    padding:"1px 6px",borderRadius:10,fontWeight:700,border:`1px solid ${CAL.border}`}}>TODAY</span>}
-                </div>
-                <div style={{fontSize:11.5,color:CAL.subtext,lineHeight:1.5,
-                  overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
-                  {text}
+        {/* ── Save Button ── */}
+        <button onClick={saveEntry}
+          style={{marginTop:10,width:"100%",padding:"13px",borderRadius:13,border:"none",
+            background:saving?"linear-gradient(135deg,#065f46,#059669)":"linear-gradient(135deg,#7B5A0A,#D4AF37,#F0D060)",
+            color:saving?"#fff":"#07090F",fontSize:13,fontWeight:900,cursor:"pointer",
+            letterSpacing:1,transition:"all .22s",fontFamily:"'Josefin Sans',sans-serif",
+            boxShadow:saving?"0 2px 12px rgba(5,150,105,.35)":"0 4px 20px rgba(212,175,55,.45)"}}>
+          {saving?"✦ SAVED!":"✦ SAVE ENTRY"}
+        </button>
+      </Card>
+
+      {/* ── Recent entries mini list ── */}
+      {Object.keys(entries).length>0&&(
+        <Card>
+          <div style={{fontSize:11,fontWeight:800,color:C.goldLight,marginBottom:10,letterSpacing:0.5,
+            fontFamily:"'Josefin Sans',sans-serif",display:"flex",alignItems:"center",gap:6}}>
+            <span style={{color:C.gold}}>✦</span> RECENT ENTRIES
+          </div>
+          {Object.entries(entries).sort((a,b)=>b[0].localeCompare(a[0])).slice(0,4).map(([date,ent])=>(
+            <div key={date}
+              onClick={()=>{const d=new Date(date+"T12:00:00");setViewYear(d.getFullYear());setViewMonth(d.getMonth());setSelDay(d.getDate());}}
+              style={{padding:"9px 12px",borderRadius:11,marginBottom:5,
+                border:`1px solid ${C.border}`,cursor:"pointer",transition:"all .14s",
+                background:"rgba(212,175,55,0.03)"}}
+              onMouseEnter={e=>{e.currentTarget.style.background=C.goldSoft;e.currentTarget.style.borderColor=C.borderBright;}}
+              onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,175,55,0.03)";e.currentTarget.style.borderColor=C.border;}}>
+              <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:3}}>
+                <span style={{fontSize:10,fontWeight:800,color:C.gold,fontFamily:"'Josefin Sans',sans-serif",letterSpacing:0.4}}>
+                  {new Date(date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric"})}
+                  {date===todayStr&&<span style={{marginLeft:6,fontSize:8,color:C.goldLight,
+                    background:"rgba(212,175,55,0.15)",padding:"1px 6px",borderRadius:8}}> TODAY</span>}
+                </span>
+                <div style={{display:"flex",gap:5,alignItems:"center"}}>
+                  {ent?.mood!=null&&<span style={{fontSize:12}}>{MOODS[ent.mood-1]?.emoji}</span>}
+                  {(ent?.hours||0)>0&&<span style={{fontSize:9,color:"#6ee7b7",fontFamily:"'Josefin Sans',sans-serif",fontWeight:700}}>⏱{ent.hours}h</span>}
                 </div>
               </div>
-            ))}
+              {ent?.text&&(
+                <div style={{fontSize:11,color:C.sub,lineHeight:1.45,
+                  overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
+                  {ent.text}
+                </div>
+              )}
+            </div>
+          ))}
+        </Card>
+      )}
+    </div>
+  );
+
+  // ══════════════════════════════════════════════
+  //  INSIGHTS TAB
+  // ══════════════════════════════════════════════
+  const maxFreq  = Math.max(...Object.values(subFreq),1);
+  const maxHrs7  = Math.max(...last7Hours.map(d=>d.hours),1);
+
+  const InsightsTab=(
+    <div style={{display:"flex",flexDirection:"column",gap:12}}>
+
+      {/* ── Key metrics 2×2 ── */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8}}>
+        {[
+          {label:"Journal Streak",  val:`${streak} days`, icon:"🔥", col:"#fbbf24"},
+          {label:"Avg Mood",        val:avgMood?`${MOODS[Math.round(avgMood)-1]?.emoji} ${avgMood}`:"—", icon:"", col:"#84cc16"},
+          {label:"Total Study Hrs", val:`${totalHours.toFixed(1)}h`, icon:"⏱", col:"#22d3ee"},
+          {label:"Total Entries",   val:totalEntries, icon:"📔", col:C.gold},
+        ].map((s,i)=>(
+          <div key={i} style={{background:C.card,borderRadius:16,padding:"16px 14px",
+            border:`1px solid ${C.border}`,textAlign:"center",boxShadow:C.glow}}>
+            <div style={{fontSize:26,fontWeight:900,color:s.col,fontFamily:"'Bebas Neue',sans-serif",
+              letterSpacing:1,lineHeight:1}}>{s.val}</div>
+            <div style={{fontSize:9,color:C.dim,marginTop:4,fontFamily:"'Josefin Sans',sans-serif",
+              fontWeight:700,letterSpacing:0.8}}>{s.label.toUpperCase()}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Study Hours Bar Chart (Last 7 days) ── */}
+      <Card>
+        <SectionLabel>Study hours — last 7 days</SectionLabel>
+        <div style={{display:"flex",gap:5,alignItems:"flex-end",height:90}}>
+          {last7Hours.map((d,i)=>{
+            const h=Math.max((d.hours/Math.max(maxHrs7,8))*100,0);
+            return(
+              <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:3}}>
+                <div style={{fontSize:8,color:d.hours>0?C.gold:C.dim,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,minHeight:12}}>
+                  {d.hours>0?`${d.hours}h`:""}
+                </div>
+                <div style={{width:"100%",height:60,display:"flex",alignItems:"flex-end"}}>
+                  <div style={{width:"100%",
+                    height:`${Math.max(h,3)}%`,minHeight:4,
+                    background: d.isToday?`linear-gradient(180deg,${C.goldLight},${C.gold})`
+                      :`linear-gradient(180deg,rgba(212,175,55,0.55),rgba(212,175,55,0.25))`,
+                    borderRadius:"5px 5px 3px 3px",
+                    boxShadow:d.isToday?`0 0 10px rgba(212,175,55,0.45)`:"none",
+                    transition:"height .5s ease"}}/>
+                </div>
+                <div style={{fontSize:9,color:d.isToday?C.gold:C.dim,
+                  fontFamily:"'Josefin Sans',sans-serif",fontWeight:d.isToday?800:600}}>{d.day}</div>
+              </div>
+            );
+          })}
+        </div>
+        {/* Reference lines */}
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+          <span style={{fontSize:8,color:C.dim,fontFamily:"'Josefin Sans',sans-serif"}}>
+            Total this week: {last7Hours.reduce((s,d)=>s+d.hours,0).toFixed(1)}h
+          </span>
+          <span style={{fontSize:8,color:C.dim,fontFamily:"'Josefin Sans',sans-serif"}}>
+            Avg: {(last7Hours.reduce((s,d)=>s+d.hours,0)/7).toFixed(1)}h/day
+          </span>
+        </div>
+      </Card>
+
+      {/* ── Mood Trend (Last 14 days) ── */}
+      <Card>
+        <SectionLabel>Mood trend — last 14 days</SectionLabel>
+        <div style={{display:"flex",gap:2,alignItems:"flex-end",height:60}}>
+          {last14Moods.map((d,i)=>{
+            const h=d.mood?(d.mood/5)*100:0;
+            const col=d.mood?MOODS[d.mood-1]?.col:"rgba(212,175,55,0.08)";
+            return(
+              <div key={i} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2}}>
+                <div style={{width:"100%",height:48,display:"flex",alignItems:"flex-end"}}>
+                  <div style={{width:"100%",height:`${Math.max(h,8)}%`,minHeight:4,
+                    background:col,borderRadius:"4px 4px 2px 2px",
+                    opacity:d.mood?1:0.3,
+                    boxShadow:d.mood&&d.isToday?`0 0 8px ${col}88`:"none",
+                    transition:"height .45s ease"}}/>
+                </div>
+                <span style={{fontSize:d.mood?10:8,lineHeight:1,color:C.dim}}>
+                  {d.mood?MOODS[d.mood-1]?.emoji:"·"}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+        <div style={{display:"flex",justifyContent:"space-between",marginTop:6}}>
+          <span style={{fontSize:8,color:C.dim,fontFamily:"'Josefin Sans',sans-serif"}}>14 days ago</span>
+          <span style={{fontSize:8,color:C.gold,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700}}>Today</span>
+        </div>
+        {/* Mood legend */}
+        <div style={{display:"flex",gap:6,flexWrap:"wrap",marginTop:10}}>
+          {MOODS.map((m,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:3}}>
+              <div style={{width:6,height:6,borderRadius:"50%",background:m.col}}/>
+              <span style={{fontSize:8,color:C.dim,fontFamily:"'Josefin Sans',sans-serif"}}>{m.label}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* ── Subject Focus Bars ── */}
+      <Card>
+        <SectionLabel>Subject focus (by tag count)</SectionLabel>
+        {Object.entries(subFreq).map(([sub,count])=>(
+          <div key={sub} style={{marginBottom:9}}>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+              <span style={{fontSize:11,color:C.text,fontFamily:"'Josefin Sans',sans-serif",fontWeight:600}}>{sub}</span>
+              <span style={{fontSize:11,color:SUB_COLS[sub],fontFamily:"'Josefin Sans',sans-serif",fontWeight:800}}>{count}×</span>
+            </div>
+            <div style={{height:6,background:"rgba(255,255,255,0.04)",borderRadius:99,overflow:"hidden"}}>
+              <div style={{height:"100%",width:`${maxFreq>0?(count/maxFreq)*100:0}%`,
+                background:SUB_COLS[sub],borderRadius:99,
+                boxShadow:`0 0 6px ${SUB_COLS[sub]}90`,transition:"width .65s ease"}}/>
+            </div>
+          </div>
+        ))}
+        {Object.values(subFreq).every(v=>v===0)&&(
+          <div style={{textAlign:"center",color:C.dim,fontSize:12,fontFamily:"'Lora',serif",fontStyle:"italic",padding:"14px 0"}}>
+            Use [Subject] tags in your entries to track your focus areas
           </div>
         )}
+      </Card>
+
+      {/* ── Streak heatmap (last 4 weeks) ── */}
+      <Card>
+        <SectionLabel>Journal activity — last 4 weeks</SectionLabel>
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:6}}>
+          {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=>(
+            <div key={d} style={{textAlign:"center",fontSize:8,color:C.dim,
+              fontFamily:"'Josefin Sans',sans-serif",fontWeight:700}}>{d}</div>
+          ))}
+        </div>
+        {/* 4 weeks of cells */}
+        <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4}}>
+          {Array.from({length:28},(_,i)=>{
+            const d=new Date(); d.setDate(d.getDate()-(27-i));
+            const k=d.toISOString().split("T")[0];
+            const ent=entries[k];
+            const wc=ent?.text?ent.text.trim().split(/\s+/).length:0;
+            const opacity=wc>150?1:wc>80?0.75:wc>30?0.5:wc>0?0.3:0;
+            const isT=k===todayStr;
+            return(
+              <div key={i} style={{aspectRatio:"1",borderRadius:5,
+                background: opacity>0?`rgba(212,175,55,${opacity})` : "rgba(255,255,255,0.03)",
+                border: isT?`1.5px solid ${C.gold}`:"none",
+                transition:"all .3s ease",
+                boxShadow: isT?`0 0 8px rgba(212,175,55,0.4)`:"none"}}/>
+            );
+          })}
+        </div>
+        {/* Legend */}
+        <div style={{display:"flex",alignItems:"center",gap:4,marginTop:10,justifyContent:"flex-end"}}>
+          <span style={{fontSize:8,color:C.dim,fontFamily:"'Josefin Sans',sans-serif"}}>Less</span>
+          {[0.12,0.3,0.55,0.8,1].map((o,i)=>(
+            <div key={i} style={{width:10,height:10,borderRadius:2,background:`rgba(212,175,55,${o})`}}/>
+          ))}
+          <span style={{fontSize:8,color:C.dim,fontFamily:"'Josefin Sans',sans-serif"}}>More</span>
+        </div>
+      </Card>
+    </div>
+  );
+
+  // ══════════════════════════════════════════════
+  //  HISTORY TAB
+  // ══════════════════════════════════════════════
+  const allEntries = Object.entries(entries)
+    .sort((a,b)=>b[0].localeCompare(a[0]))
+    .filter(([date,ent])=>{
+      if(!hSearch)return true;
+      return (ent?.text||"").toLowerCase().includes(hSearch.toLowerCase())||date.includes(hSearch);
+    });
+
+  const HistoryTab=(
+    <div style={{display:"flex",flexDirection:"column",gap:10}}>
+      {/* Search */}
+      <div style={{position:"relative"}}>
+        <input value={hSearch} onChange={e=>setHSearch(e.target.value)}
+          placeholder="Search your entries..."
+          style={{width:"100%",padding:"10px 14px 10px 36px",borderRadius:12,
+            border:`1.5px solid ${C.border}`,background:"rgba(6,9,20,0.75)",
+            fontSize:12,color:C.text,outline:"none",boxSizing:"border-box",
+            fontFamily:"'Lora',serif",transition:"border-color .15s"}}
+          onFocus={e=>e.target.style.borderColor=C.gold}
+          onBlur={e=>e.target.style.borderColor=C.border}/>
+        <span style={{position:"absolute",left:12,top:"50%",transform:"translateY(-50%)",
+          fontSize:14,color:C.dim,pointerEvents:"none"}}>🔍</span>
+        {hSearch&&(
+          <button onClick={()=>setHSearch("")}
+            style={{position:"absolute",right:10,top:"50%",transform:"translateY(-50%)",
+              background:"none",border:"none",color:C.dim,cursor:"pointer",fontSize:16}}>×</button>
+        )}
+      </div>
+      {/* Entry count */}
+      {Object.keys(entries).length>0&&(
+        <div style={{fontSize:9,color:C.dim,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,letterSpacing:1}}>
+          {allEntries.length} {hSearch?"result":"entr"}{allEntries.length===1?"y":"ies"}{hSearch?" found":""}
+        </div>
+      )}
+      {allEntries.length===0?(
+        <div style={{textAlign:"center",color:C.dim,fontSize:13,fontFamily:"'Lora',serif",
+          fontStyle:"italic",padding:"32px 0"}}>
+          {hSearch?"No entries match your search":"No journal entries yet — start writing!"}
+        </div>
+      ):allEntries.map(([date,ent])=>{
+        const text   = ent?.text||"";
+        const wc     = text.trim()?text.trim().split(/\s+/).length:0;
+        const moodV  = ent?.mood;
+        const hrs    = ent?.hours||0;
+        return(
+          <div key={date}
+            onClick={()=>{
+              const d=new Date(date+"T12:00:00");
+              setViewYear(d.getFullYear());setViewMonth(d.getMonth());setSelDay(d.getDate());
+              setJTab("write");
+            }}
+            style={{padding:"12px 14px",borderRadius:15,border:`1px solid ${C.border}`,
+              cursor:"pointer",background:"rgba(212,175,55,0.025)",transition:"all .15s"}}
+            onMouseEnter={e=>{e.currentTarget.style.background=C.goldSoft;e.currentTarget.style.borderColor=C.borderBright;}}
+            onMouseLeave={e=>{e.currentTarget.style.background="rgba(212,175,55,0.025)";e.currentTarget.style.borderColor=C.border;}}>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:5}}>
+              <div style={{fontSize:11,fontWeight:800,color:C.gold,fontFamily:"'Josefin Sans',sans-serif",letterSpacing:0.5}}>
+                {new Date(date+"T12:00:00").toLocaleDateString("en-US",{weekday:"short",month:"short",day:"numeric",year:"numeric"})}
+                {date===todayStr&&<span style={{marginLeft:6,fontSize:8,color:C.goldLight,
+                  background:"rgba(212,175,55,0.14)",padding:"1px 6px",borderRadius:8,fontWeight:700}}> TODAY</span>}
+              </div>
+              <div style={{display:"flex",gap:6,alignItems:"center",flexShrink:0}}>
+                {moodV!=null&&<span style={{fontSize:14}}>{MOODS[moodV-1]?.emoji}</span>}
+                {hrs>0&&<span style={{fontSize:9,color:"#6ee7b7",fontFamily:"'Josefin Sans',sans-serif",fontWeight:700}}>⏱{hrs}h</span>}
+                {wc>0&&<span style={{fontSize:9,color:C.dim,fontFamily:"'Josefin Sans',sans-serif"}}>{wc}w</span>}
+              </div>
+            </div>
+            {text&&(
+              <div style={{fontSize:11.5,color:C.sub,lineHeight:1.5,
+                overflow:"hidden",display:"-webkit-box",WebkitLineClamp:2,WebkitBoxOrient:"vertical"}}>
+                {text}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+
+  // ══════════════════════════════════════════════
+  //  RENDER
+  // ══════════════════════════════════════════════
+  return(
+    <div style={{flex:1,overflowY:"auto",display:"flex",flexDirection:"column",background:C.bg}}>
+
+      {/* ── Premium Header ── */}
+      <div style={{background:"linear-gradient(135deg,#060A1C 0%,#0E1428 50%,#16204A 100%)",
+        padding:"18px 18px 14px",flexShrink:0,
+        borderBottom:`1px solid ${C.border}`,boxShadow:"0 4px 28px rgba(0,0,0,0.65)",
+        position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-50,right:-40,width:180,height:180,borderRadius:"50%",
+          background:"radial-gradient(circle,rgba(212,175,55,0.1),transparent 70%)",pointerEvents:"none"}}/>
+        <div style={{position:"absolute",bottom:-30,left:0,width:120,height:120,borderRadius:"50%",
+          background:"radial-gradient(circle,rgba(212,175,55,0.06),transparent 70%)",pointerEvents:"none"}}/>
+        <div style={{display:"flex",alignItems:"flex-start",justifyContent:"space-between"}}>
+          <div>
+            <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+              color:C.dim,letterSpacing:3,marginBottom:4}}>✦ STUDY JOURNAL</div>
+            <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:28,letterSpacing:2.5,
+              color:C.goldLight,lineHeight:1,textShadow:"0 0 24px rgba(212,175,55,0.4)"}}>
+              {monthNames[viewMonth].toUpperCase()} {viewYear}
+            </div>
+          </div>
+          {streak>0&&(
+            <div style={{display:"flex",alignItems:"center",gap:6,
+              background:"rgba(245,158,11,0.1)",border:"1px solid rgba(245,158,11,0.28)",
+              borderRadius:16,padding:"8px 14px",flexShrink:0}}>
+              <span style={{fontSize:18,animation:"float 3s ease infinite"}}>🔥</span>
+              <div style={{textAlign:"center"}}>
+                <div style={{fontFamily:"'Bebas Neue',sans-serif",fontSize:22,color:"#fbbf24",lineHeight:1,letterSpacing:1}}>{streak}</div>
+                <div style={{fontSize:8,color:"rgba(245,158,11,0.55)",fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,letterSpacing:1}}>DAY STREAK</div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── Tab Bar ── */}
+      <div style={{display:"flex",background:"rgba(6,9,20,0.7)",
+        borderBottom:`1px solid ${C.border}`,flexShrink:0}}>
+        {[
+          {k:"write",    label:"✍️ Write"},
+          {k:"insights", label:"📊 Insights"},
+          {k:"history",  label:"📖 History"},
+        ].map(t=>{
+          const active=jTab===t.k;
+          return(
+            <button key={t.k} onClick={()=>setJTab(t.k)}
+              style={{flex:1,padding:"11px 4px",border:"none",background:"transparent",
+                cursor:"pointer",fontSize:11,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+                letterSpacing:0.8,color:active?C.gold:"rgba(212,175,55,0.3)",
+                borderBottom:active?`2.5px solid ${C.gold}`:"2.5px solid transparent",
+                transition:"all .15s",WebkitTapHighlightColor:"transparent",
+                boxShadow:active?`inset 0 -4px 12px rgba(212,175,55,0.06)`:"none"}}>
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* ── Page Content ── */}
+      <div style={{padding:"12px 12px 28px",flex:1}}>
+        {jTab==="write"    && WriteTab}
+        {jTab==="insights" && InsightsTab}
+        {jTab==="history"  && HistoryTab}
       </div>
     </div>
   );
