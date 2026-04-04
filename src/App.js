@@ -2764,22 +2764,18 @@ function MindMap({chap,col}){
 // ══════════════════════════════════════════════════════════════════════
 function RadialMM({s,col,name,uid}){
   const nT=s.length;
-  const W=900,H=680,CX=450,CY=340;
-  // Scale radii so nodes never overlap regardless of topic count
-  const R1=Math.max(140,nT*24);
-  const R2=R1+155;
-  const R3=R2+112;
+  const W=760,H=530,CX=380,CY=265;
+  const R1=138,R2=262,R3=348;
   const angOff=-Math.PI/2;
+  const topAngles=s.map((_,i)=>angOff+(2*Math.PI/nT)*i);
   const arcPerTopic=2*Math.PI/nT;
-  // Give each topic a generous angular slice
-  const subSpreadMax=Math.min(arcPerTopic*0.80,1.35);
-  const topAngles=s.map((_,i)=>angOff+arcPerTopic*i);
-  const showC=nT<=6;
+  const subSpreadMax=Math.min(arcPerTopic*0.76,1.08);
+  const showC=nT<=5;
 
   return(
     <div style={{overflowX:"auto",borderRadius:18,border:`1.5px solid ${col}40`,
       background:"linear-gradient(135deg,#0a0820 0%,#160c38 50%,#0d0a2e 100%)"}}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:720,display:"block",padding:"6px 0"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:620,display:"block",padding:"6px 0"}}>
         <defs>
           <radialGradient id={`rBg-${uid}`} cx="50%" cy="50%" r="55%">
             <stop offset="0%" stopColor={col} stopOpacity="0.2"/>
@@ -2830,7 +2826,7 @@ function RadialMM({s,col,name,uid}){
                 const sx=CX+Math.cos(sa)*R2;
                 const sy=CY+Math.sin(sa)*R2;
                 const nC=Math.min(sub.concepts.length,3);
-                const sliceForSub=subSpreadMax/Math.max(nS,1); const cSpr=nC>1?Math.min(sliceForSub*0.55,0.42):0;
+                const cSpr=Math.min(0.36,0.55/Math.max(nC,1));
                 return(
                   <g key={j}>
                     {/* Topic → Subtopic: curved dashed */}
@@ -2919,7 +2915,7 @@ function RadialMM({s,col,name,uid}){
 // ══════════════════════════════════════════════════════════════════════
 function HTreeMM({s,col,name,uid}){
   const MAX_C=4;
-  const CH=28,PAD_TOP=36,GAP_TOPIC=28;
+  const CH=24,PAD_TOP=32,GAP_TOPIC=20;
 
   // Build layout — compute Y positions
   let curY=PAD_TOP;
@@ -2941,14 +2937,14 @@ function HTreeMM({s,col,name,uid}){
   });
 
   const H=Math.max(curY+PAD_TOP,260);
-  const W=1020;
-  const RX=72,TX=228,SX=430,COX=630;
+  const W=920;
+  const RX=72,TX=218,SX=408,COX=604;
   const rootY=topics.length?topics.reduce((a,b)=>a+b.y,0)/topics.length:H/2;
 
   return(
     <div style={{overflowX:"auto",borderRadius:18,border:`1.5px solid ${col}28`,
       background:"linear-gradient(150deg,#faf9ff 0%,#f4f0fe 60%,#ede9fe28 100%)"}}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:820,display:"block"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:760,display:"block"}}>
         <defs>
           <linearGradient id={`hGrad-${uid}`} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor={col}/>
@@ -3071,15 +3067,15 @@ function HTreeMM({s,col,name,uid}){
 // ══════════════════════════════════════════════════════════════════════
 function VTreeMM({s,col,name,uid}){
   const nT=s.length;
-  const W=Math.max(nT*180+80,780);
-  const H=540;
-  const rootY=46,topY=118,subY=218,conY=335;
+  const W=Math.max(nT*148+80,700);
+  const H=500;
+  const rootY=46,topY=118,subY=210,conY=310;
   const topXs=s.map((_,i)=>40+(i+0.5)*(W-80)/nT);
 
   return(
     <div style={{overflowX:"auto",borderRadius:18,border:`1.5px solid ${col}40`,
       background:"linear-gradient(180deg,#0a0820 0%,#120a30 55%,#0d0a2e 100%)"}}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:700,display:"block",padding:"6px 0"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:640,display:"block",padding:"6px 0"}}>
         <defs>
           <linearGradient id={`vGrad-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={col}/>
@@ -3122,7 +3118,7 @@ function VTreeMM({s,col,name,uid}){
           const tx=topXs[i];
           const nS=topic.subtopics.length;
           const availW=W/nT-32;
-          const subSpread=nS>1?Math.min(availW*0.95,(nS-1)*72):0;
+          const subSpread=nS>1?Math.min(availW*0.88,(nS-1)*58):0;
           const subXs=topic.subtopics.map((_,j)=>nS>1?tx+(j-(nS-1)/2)*(subSpread/Math.max(nS-1,1)):tx);
 
           return(
@@ -3140,8 +3136,8 @@ function VTreeMM({s,col,name,uid}){
               {topic.subtopics.map((sub,j)=>{
                 const sx=subXs[j];
                 const nC=Math.min(sub.concepts.length,3);
-                const cAvailW=availW*0.85;
-                const cSpread=nC>1?Math.min(cAvailW*0.9,(nC-1)*60):0;
+                const cAvailW=availW*0.92/Math.max(nT,1);
+                const cSpread=nC>1?Math.min(cAvailW*0.85,(nC-1)*52):0;
                 const cXs=[...Array(nC)].map((_,k)=>nC>1?sx+(k-(nC-1)/2)*(cSpread/Math.max(nC-1,1)):sx);
 
                 return(
@@ -4433,6 +4429,33 @@ const SUB_TAGS = [
 
 const SUB_COLS = { Maths:"#7c3aed", Physics:"#ea580c", Chemistry:"#059669", Revision:"#0ea5e9", "Mock Test":"#dc2626" };
 
+// ── Journal shared components — defined OUTSIDE JournalView so React never
+// recreates them on state change. If they were inside JournalView, every
+// keystroke (setDraft) would give them a new function reference, causing
+// React to unmount+remount them — dismissing the mobile keyboard each time.
+const JOURNAL_COLORS = {
+  card:   "linear-gradient(150deg,rgba(18,24,56,0.97),rgba(24,32,72,0.95))",
+  border: "rgba(212,175,55,0.2)",
+  shadow: "0 6px 32px rgba(0,0,0,0.55)",
+  dim:    "rgba(212,175,55,0.4)",
+};
+function JournalSectionLabel({children}){
+  return(
+    <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
+      color:JOURNAL_COLORS.dim,letterSpacing:2.5,marginBottom:9,textTransform:"uppercase"}}>
+      ✦ {children}
+    </div>
+  );
+}
+function JournalCard({children,style={}}){
+  return(
+    <div style={{background:JOURNAL_COLORS.card,borderRadius:20,padding:"16px",
+      border:`1px solid ${JOURNAL_COLORS.border}`,boxShadow:JOURNAL_COLORS.shadow,...style}}>
+      {children}
+    </div>
+  );
+}
+
 // ── JOURNAL VIEW ─────────────────────────────────────────────────────────
 function JournalView(){
   const today   = new Date();
@@ -4603,21 +4626,6 @@ function JournalView(){
     todayBg:     "rgba(212,175,55,0.16)",
   };
 
-  // ── Shared small components ──
-  const SectionLabel = ({children})=>(
-    <div style={{fontSize:9,fontFamily:"'Josefin Sans',sans-serif",fontWeight:700,
-      color:C.dim,letterSpacing:2.5,marginBottom:9,textTransform:"uppercase"}}>
-      ✦ {children}
-    </div>
-  );
-
-  const Card = ({children,style={}})=>(
-    <div style={{background:C.card,borderRadius:20,padding:"16px",
-      border:`1px solid ${C.border}`,boxShadow:C.shadow,...style}}>
-      {children}
-    </div>
-  );
-
   // ══════════════════════════════════════════════
   //  WRITE TAB
   // ══════════════════════════════════════════════
@@ -4643,7 +4651,7 @@ function JournalView(){
       </div>
 
       {/* ── Calendar ── */}
-      <Card>
+      <JournalCard>
         {/* Month nav */}
         <div style={{display:"flex",alignItems:"center",marginBottom:12}}>
           <button onClick={prevMonth}
@@ -4711,7 +4719,7 @@ function JournalView(){
             ✦ JUMP TO TODAY
           </button>
         )}
-      </Card>
+      </JournalCard>
 
       {/* ── Daily Writing Prompt ── */}
       {showPrompt&&(
@@ -4738,7 +4746,7 @@ function JournalView(){
       )}
 
       {/* ── Entry Card ── */}
-      <Card>
+      <JournalCard>
         {/* Header */}
         <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:14}}>
           <div>
@@ -4755,7 +4763,7 @@ function JournalView(){
         </div>
 
         {/* ── Mood Picker ── */}
-        <SectionLabel>How's your mood?</SectionLabel>
+        <JournalSectionLabel>How's your mood?</JournalSectionLabel>
         <div style={{display:"flex",gap:6,marginBottom:14}}>
           {MOODS.map((m,idx)=>{
             const v=idx+1, sel=mood===v;
@@ -4776,7 +4784,7 @@ function JournalView(){
         </div>
 
         {/* ── Study Hours Stepper ── */}
-        <SectionLabel>Study hours today</SectionLabel>
+        <JournalSectionLabel>Study hours today</JournalSectionLabel>
         <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:14}}>
           <button onClick={()=>setHours(h=>Math.max(0,parseFloat((h-0.5).toFixed(1))))}
             style={{width:34,height:34,borderRadius:9,border:`1px solid ${C.border}`,
@@ -4802,7 +4810,7 @@ function JournalView(){
         </div>
 
         {/* ── Quick Subject Tags ── */}
-        <SectionLabel>Quick tags</SectionLabel>
+        <JournalSectionLabel>Quick tags</JournalSectionLabel>
         <div style={{display:"flex",gap:5,flexWrap:"wrap",marginBottom:12}}>
           {SUB_TAGS.map(t=>(
             <button key={t.label} onClick={()=>setDraft(d=>(d?d+"\n":"")+`[${t.label}] `)}
@@ -4846,11 +4854,11 @@ function JournalView(){
             boxShadow:saving?"0 2px 12px rgba(5,150,105,.35)":"0 4px 20px rgba(212,175,55,.45)"}}>
           {saving?"✦ SAVED!":"✦ SAVE ENTRY"}
         </button>
-      </Card>
+      </JournalCard>
 
       {/* ── Recent entries mini list ── */}
       {Object.keys(entries).length>0&&(
-        <Card>
+        <JournalCard>
           <div style={{fontSize:11,fontWeight:800,color:C.goldLight,marginBottom:10,letterSpacing:0.5,
             fontFamily:"'Josefin Sans',sans-serif",display:"flex",alignItems:"center",gap:6}}>
             <span style={{color:C.gold}}>✦</span> RECENT ENTRIES
@@ -4882,7 +4890,7 @@ function JournalView(){
               )}
             </div>
           ))}
-        </Card>
+        </JournalCard>
       )}
     </div>
   );
@@ -4915,8 +4923,8 @@ function JournalView(){
       </div>
 
       {/* ── Study Hours Bar Chart (Last 7 days) ── */}
-      <Card>
-        <SectionLabel>Study hours — last 7 days</SectionLabel>
+      <JournalCard>
+        <JournalSectionLabel>Study hours — last 7 days</JournalSectionLabel>
         <div style={{display:"flex",gap:5,alignItems:"flex-end",height:90}}>
           {last7Hours.map((d,i)=>{
             const h=Math.max((d.hours/Math.max(maxHrs7,8))*100,0);
@@ -4949,11 +4957,11 @@ function JournalView(){
             Avg: {(last7Hours.reduce((s,d)=>s+d.hours,0)/7).toFixed(1)}h/day
           </span>
         </div>
-      </Card>
+      </JournalCard>
 
       {/* ── Mood Trend (Last 14 days) ── */}
-      <Card>
-        <SectionLabel>Mood trend — last 14 days</SectionLabel>
+      <JournalCard>
+        <JournalSectionLabel>Mood trend — last 14 days</JournalSectionLabel>
         <div style={{display:"flex",gap:2,alignItems:"flex-end",height:60}}>
           {last14Moods.map((d,i)=>{
             const h=d.mood?(d.mood/5)*100:0;
@@ -4987,11 +4995,11 @@ function JournalView(){
             </div>
           ))}
         </div>
-      </Card>
+      </JournalCard>
 
       {/* ── Subject Focus Bars ── */}
-      <Card>
-        <SectionLabel>Subject focus (by tag count)</SectionLabel>
+      <JournalCard>
+        <JournalSectionLabel>Subject focus (by tag count)</JournalSectionLabel>
         {Object.entries(subFreq).map(([sub,count])=>(
           <div key={sub} style={{marginBottom:9}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
@@ -5010,11 +5018,11 @@ function JournalView(){
             Use [Subject] tags in your entries to track your focus areas
           </div>
         )}
-      </Card>
+      </JournalCard>
 
       {/* ── Streak heatmap (last 4 weeks) ── */}
-      <Card>
-        <SectionLabel>Journal activity — last 4 weeks</SectionLabel>
+      <JournalCard>
+        <JournalSectionLabel>Journal activity — last 4 weeks</JournalSectionLabel>
         <div style={{display:"grid",gridTemplateColumns:"repeat(7,1fr)",gap:4,marginBottom:6}}>
           {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=>(
             <div key={d} style={{textAlign:"center",fontSize:8,color:C.dim,
@@ -5047,7 +5055,7 @@ function JournalView(){
           ))}
           <span style={{fontSize:8,color:C.dim,fontFamily:"'Josefin Sans',sans-serif"}}>More</span>
         </div>
-      </Card>
+      </JournalCard>
     </div>
   );
 
