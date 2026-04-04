@@ -2764,18 +2764,22 @@ function MindMap({chap,col}){
 // ══════════════════════════════════════════════════════════════════════
 function RadialMM({s,col,name,uid}){
   const nT=s.length;
-  const W=760,H=530,CX=380,CY=265;
-  const R1=138,R2=262,R3=348;
+  const W=900,H=680,CX=450,CY=340;
+  // Scale radii so nodes never overlap regardless of topic count
+  const R1=Math.max(140,nT*24);
+  const R2=R1+155;
+  const R3=R2+112;
   const angOff=-Math.PI/2;
-  const topAngles=s.map((_,i)=>angOff+(2*Math.PI/nT)*i);
   const arcPerTopic=2*Math.PI/nT;
-  const subSpreadMax=Math.min(arcPerTopic*0.76,1.08);
-  const showC=nT<=5;
+  // Give each topic a generous angular slice
+  const subSpreadMax=Math.min(arcPerTopic*0.80,1.35);
+  const topAngles=s.map((_,i)=>angOff+arcPerTopic*i);
+  const showC=nT<=6;
 
   return(
     <div style={{overflowX:"auto",borderRadius:18,border:`1.5px solid ${col}40`,
       background:"linear-gradient(135deg,#0a0820 0%,#160c38 50%,#0d0a2e 100%)"}}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:620,display:"block",padding:"6px 0"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:720,display:"block",padding:"6px 0"}}>
         <defs>
           <radialGradient id={`rBg-${uid}`} cx="50%" cy="50%" r="55%">
             <stop offset="0%" stopColor={col} stopOpacity="0.2"/>
@@ -2826,7 +2830,7 @@ function RadialMM({s,col,name,uid}){
                 const sx=CX+Math.cos(sa)*R2;
                 const sy=CY+Math.sin(sa)*R2;
                 const nC=Math.min(sub.concepts.length,3);
-                const cSpr=Math.min(0.36,0.55/Math.max(nC,1));
+                const sliceForSub=subSpreadMax/Math.max(nS,1); const cSpr=nC>1?Math.min(sliceForSub*0.55,0.42):0;
                 return(
                   <g key={j}>
                     {/* Topic → Subtopic: curved dashed */}
@@ -2915,7 +2919,7 @@ function RadialMM({s,col,name,uid}){
 // ══════════════════════════════════════════════════════════════════════
 function HTreeMM({s,col,name,uid}){
   const MAX_C=4;
-  const CH=24,PAD_TOP=32,GAP_TOPIC=20;
+  const CH=28,PAD_TOP=36,GAP_TOPIC=28;
 
   // Build layout — compute Y positions
   let curY=PAD_TOP;
@@ -2937,14 +2941,14 @@ function HTreeMM({s,col,name,uid}){
   });
 
   const H=Math.max(curY+PAD_TOP,260);
-  const W=920;
-  const RX=72,TX=218,SX=408,COX=604;
+  const W=1020;
+  const RX=72,TX=228,SX=430,COX=630;
   const rootY=topics.length?topics.reduce((a,b)=>a+b.y,0)/topics.length:H/2;
 
   return(
     <div style={{overflowX:"auto",borderRadius:18,border:`1.5px solid ${col}28`,
       background:"linear-gradient(150deg,#faf9ff 0%,#f4f0fe 60%,#ede9fe28 100%)"}}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:760,display:"block"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:820,display:"block"}}>
         <defs>
           <linearGradient id={`hGrad-${uid}`} x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stopColor={col}/>
@@ -3067,15 +3071,15 @@ function HTreeMM({s,col,name,uid}){
 // ══════════════════════════════════════════════════════════════════════
 function VTreeMM({s,col,name,uid}){
   const nT=s.length;
-  const W=Math.max(nT*148+80,700);
-  const H=500;
-  const rootY=46,topY=118,subY=210,conY=310;
+  const W=Math.max(nT*180+80,780);
+  const H=540;
+  const rootY=46,topY=118,subY=218,conY=335;
   const topXs=s.map((_,i)=>40+(i+0.5)*(W-80)/nT);
 
   return(
     <div style={{overflowX:"auto",borderRadius:18,border:`1.5px solid ${col}40`,
       background:"linear-gradient(180deg,#0a0820 0%,#120a30 55%,#0d0a2e 100%)"}}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:640,display:"block",padding:"6px 0"}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:700,display:"block",padding:"6px 0"}}>
         <defs>
           <linearGradient id={`vGrad-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
             <stop offset="0%" stopColor={col}/>
@@ -3118,7 +3122,7 @@ function VTreeMM({s,col,name,uid}){
           const tx=topXs[i];
           const nS=topic.subtopics.length;
           const availW=W/nT-32;
-          const subSpread=nS>1?Math.min(availW*0.88,(nS-1)*58):0;
+          const subSpread=nS>1?Math.min(availW*0.95,(nS-1)*72):0;
           const subXs=topic.subtopics.map((_,j)=>nS>1?tx+(j-(nS-1)/2)*(subSpread/Math.max(nS-1,1)):tx);
 
           return(
@@ -3136,8 +3140,8 @@ function VTreeMM({s,col,name,uid}){
               {topic.subtopics.map((sub,j)=>{
                 const sx=subXs[j];
                 const nC=Math.min(sub.concepts.length,3);
-                const cAvailW=availW*0.92/Math.max(nT,1);
-                const cSpread=nC>1?Math.min(cAvailW*0.85,(nC-1)*52):0;
+                const cAvailW=availW*0.85;
+                const cSpread=nC>1?Math.min(cAvailW*0.9,(nC-1)*60):0;
                 const cXs=[...Array(nC)].map((_,k)=>nC>1?sx+(k-(nC-1)/2)*(cSpread/Math.max(nC-1,1)):sx);
 
                 return(
@@ -4494,17 +4498,13 @@ function JournalView(){
   },[]);
 
   // ── Populate fields when day changes ──
-  // NOTE: 'entries' intentionally excluded from deps — we only want to
-  // repopulate when the selected day or initial load changes, NOT on
-  // every keystroke (which would reset the draft and dismiss the keyboard).
   useEffect(()=>{
     if(!loaded)return;
     const e=entries[selStr];
     setDraft(e?.text||"");
     setMood(e?.mood??null);
     setHours(e?.hours??0);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  },[selStr,loaded]);
+  },[selStr,loaded,entries]);
 
   async function saveEntry(){
     setSaving(true);
