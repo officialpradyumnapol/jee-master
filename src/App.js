@@ -2738,8 +2738,167 @@ class MindMapBoundary extends React.Component {
   }
 }
 
+// ── MINDMAP FULLSCREEN ZOOM VIEWER ──────────────────────────────────────
+function MindMapFullscreenViewer({chap, col, onClose}){
+  const [scale, setScale] = useState(0.9);
+  const [pos, setPos] = useState({x:0, y:0});
+  const dragging = React.useRef(false);
+  const lastPos = React.useRef({x:0, y:0});
+  const pinchDist = React.useRef(null);
+  const containerRef = React.useRef(null);
+
+  const clampScale = s => Math.max(0.25, Math.min(5, s));
+
+  const handleWheel = useCallback((e)=>{
+    e.preventDefault();
+    const delta = e.deltaY < 0 ? 1.12 : 0.89;
+    setScale(s => clampScale(s * delta));
+  }, []);
+
+  useEffect(()=>{
+    const el = containerRef.current;
+    if(!el) return;
+    el.addEventListener('wheel', handleWheel, {passive:false});
+    return ()=> el.removeEventListener('wheel', handleWheel);
+  }, [handleWheel]);
+
+  useEffect(()=>{
+    const fn = e => { if(e.key==="Escape") onClose(); };
+    window.addEventListener('keydown', fn);
+    return ()=> window.removeEventListener('keydown', fn);
+  }, [onClose]);
+
+  const onMouseDown = e => {
+    dragging.current = true;
+    lastPos.current = {x: e.clientX - pos.x, y: e.clientY - pos.y};
+  };
+  const onMouseMove = e => {
+    if(!dragging.current) return;
+    setPos({x: e.clientX - lastPos.current.x, y: e.clientY - lastPos.current.y});
+  };
+  const onMouseUp = () => { dragging.current = false; };
+
+  const getTouchDist = touches => {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx*dx + dy*dy);
+  };
+  const onTouchStart = e => {
+    if(e.touches.length === 1){
+      dragging.current = true;
+      lastPos.current = {x: e.touches[0].clientX - pos.x, y: e.touches[0].clientY - pos.y};
+    } else if(e.touches.length === 2){
+      dragging.current = false;
+      pinchDist.current = getTouchDist(e.touches);
+    }
+  };
+  const onTouchMove = e => {
+    e.preventDefault();
+    if(e.touches.length === 1 && dragging.current){
+      setPos({x: e.touches[0].clientX - lastPos.current.x, y: e.touches[0].clientY - lastPos.current.y});
+    } else if(e.touches.length === 2 && pinchDist.current){
+      const d = getTouchDist(e.touches);
+      setScale(s => clampScale(s * (d / pinchDist.current)));
+      pinchDist.current = d;
+    }
+  };
+  const onTouchEnd = e => {
+    if(e.touches.length < 2) pinchDist.current = null;
+    if(e.touches.length === 0) dragging.current = false;
+  };
+
+  const chapS = chap?.syllabus || [];
+  const num = parseInt((chap?.id||"").replace(/\D/g,"")) || 0;
+  const mode = num % 3;
+  const uid = ((chap?.id||"x") + "_fs").replace(/\W/g,"");
+
+  const ZBtn = ({onClick, children, accent}) => (
+    <button onClick={onClick} style={{
+      width:42, height:42, borderRadius:12,
+      border:`1.5px solid ${accent||"rgba(129,140,248,0.35)"}`,
+      background: accent ? `${accent}22` : "rgba(79,70,229,0.15)",
+      color: accent || "#a5b4fc", fontSize:18, cursor:"pointer",
+      display:"flex", alignItems:"center", justifyContent:"center",
+      fontFamily:"system-ui", WebkitTapHighlightColor:"transparent",
+      transition:"all 0.15s",
+      boxShadow:`0 2px 12px ${accent||"rgba(99,102,241,0.15)"}`,
+    }}>{children}</button>
+  );
+
+  return (
+    <div style={{position:"fixed", inset:0, background:"#050812", zIndex:9999,
+      display:"flex", flexDirection:"column", fontFamily:"'Lora',serif"}}>
+      <div className="star-layer" style={{zIndex:0, position:"fixed"}}/>
+
+      {/* ── Header ── */}
+      <div style={{display:"flex", alignItems:"center", padding:"0 16px", height:54,
+        background:"rgba(7,10,26,0.92)", backdropFilter:"blur(12px)",
+        WebkitBackdropFilter:"blur(12px)",
+        borderBottom:"1px solid rgba(99,102,241,0.2)", flexShrink:0,
+        position:"relative", zIndex:2,
+        boxShadow:"0 1px 0 rgba(129,140,248,0.08), 0 4px 24px rgba(0,0,0,0.5)"}}>
+        <div className="ae-header-glow-line"/>
+        <div style={{flex:1}}>
+          <div style={{fontFamily:"'Cinzel',serif", fontSize:14, color:"#a5b4fc",
+            letterSpacing:2, textShadow:`0 0 20px ${col}80`}}>
+            🗺 MIND MAP
+          </div>
+          <div style={{fontSize:9, fontFamily:"'Josefin Sans',sans-serif", fontWeight:700,
+            color:"rgba(255,255,255,0.3)", letterSpacing:1.5, marginTop:1}}>
+            {(chap?.name||"").toUpperCase()}
+          </div>
+        </div>
+        <div style={{display:"flex", gap:8, alignItems:"center"}}>
+          <ZBtn onClick={()=>setScale(s=>clampScale(s*1.25))}>＋</ZBtn>
+          <ZBtn onClick={()=>setScale(s=>clampScale(s/1.25))}>－</ZBtn>
+          <ZBtn onClick={()=>{setScale(0.9);setPos({x:0,y:0});}}>⟳</ZBtn>
+          <ZBtn onClick={onClose} accent="rgba(244,63,94,0.8)">✕</ZBtn>
+        </div>
+      </div>
+
+      {/* ── Zoomable canvas ── */}
+      <div ref={containerRef}
+        style={{flex:1, overflow:"hidden", position:"relative", zIndex:1,
+          cursor:"grab", touchAction:"none", userSelect:"none"}}
+        onMouseDown={onMouseDown} onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}>
+        <div style={{position:"absolute", inset:0, display:"flex",
+          alignItems:"center", justifyContent:"center", pointerEvents:"none"}}>
+          <div style={{
+            transform:`translate(${pos.x}px,${pos.y}px) scale(${scale})`,
+            transformOrigin:"center center", pointerEvents:"none",
+            width:"min(95vw,1280px)"}}>
+            <MindMapBoundary>
+              {mode===1 ? <HTreeMM s={chapS} col={col} name={chap?.name} uid={uid}/>
+               : mode===2 ? <VTreeMM s={chapS} col={col} name={chap?.name} uid={uid}/>
+               : <RadialMM s={chapS} col={col} name={chap?.name} uid={uid}/>}
+            </MindMapBoundary>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Bottom bar ── */}
+      <div style={{display:"flex", alignItems:"center", justifyContent:"space-between",
+        padding:"6px 16px", background:"rgba(7,10,26,0.9)",
+        borderTop:"1px solid rgba(99,102,241,0.12)", flexShrink:0, position:"relative", zIndex:2}}>
+        <span style={{fontFamily:"'JetBrains Mono',monospace", fontSize:10,
+          color:"rgba(129,140,248,0.55)", letterSpacing:0.5}}>
+          {Math.round(scale*100)}%
+        </span>
+        <span style={{fontFamily:"'Josefin Sans',sans-serif", fontSize:8, fontWeight:700,
+          color:"rgba(129,140,248,0.35)", letterSpacing:2}}>
+          SCROLL · PINCH TO ZOOM · DRAG TO PAN
+        </span>
+        <span style={{fontSize:12, opacity:0.4}}>🔍</span>
+      </div>
+    </div>
+  );
+}
+
 // ── MINDMAP DISPATCHER ─────────────────────────────────────────────────
 function MindMap({chap,col}){
+  const [fsOpen, setFsOpen] = useState(false);
   const s=chap?.syllabus||[];
   if(!s.length)return(
     <div style={{padding:"20px",textAlign:"center",color:"#9b98b0",fontSize:13}}>
@@ -2749,66 +2908,130 @@ function MindMap({chap,col}){
   const num=parseInt((chap.id||"").replace(/\D/g,""))||0;
   const mode=num%3;
   const uid=(chap.id||"x").replace(/\W/g,"");
+
   return(
-    <MindMapBoundary>
-      {mode===1?<HTreeMM s={s} col={col} name={chap.name} uid={uid}/>:
-       mode===2?<VTreeMM s={s} col={col} name={chap.name} uid={uid}/>:
-       <RadialMM s={s} col={col} name={chap.name} uid={uid}/>}
-    </MindMapBoundary>
+    <>
+      {fsOpen && <MindMapFullscreenViewer chap={chap} col={col} onClose={()=>setFsOpen(false)}/>}
+      <div onClick={()=>setFsOpen(true)}
+        style={{cursor:"pointer", position:"relative",
+          transition:"transform 0.15s", borderRadius:20}}
+        onMouseEnter={e=>{e.currentTarget.style.transform="scale(1.01)";}}
+        onMouseLeave={e=>{e.currentTarget.style.transform="scale(1)";}}>
+        {/* Tap-to-zoom badge */}
+        <div style={{position:"absolute", top:12, right:12, zIndex:5,
+          background:"rgba(79,70,229,0.88)", backdropFilter:"blur(8px)",
+          WebkitBackdropFilter:"blur(8px)",
+          border:"1px solid rgba(129,140,248,0.55)", borderRadius:20,
+          padding:"5px 11px", display:"flex", alignItems:"center", gap:5,
+          boxShadow:"0 2px 16px rgba(99,102,241,0.5)",
+          animation:"pulse 2.5s ease infinite"}}>
+          <span style={{fontSize:11}}>🔍</span>
+          <span style={{fontFamily:"'Josefin Sans',sans-serif", fontSize:8, fontWeight:700,
+            color:"#c7d2fe", letterSpacing:1.5}}>TAP TO ZOOM</span>
+        </div>
+        <MindMapBoundary>
+          {mode===1?<HTreeMM s={s} col={col} name={chap.name} uid={uid}/>:
+           mode===2?<VTreeMM s={s} col={col} name={chap.name} uid={uid}/>:
+           <RadialMM s={s} col={col} name={chap.name} uid={uid}/>}
+        </MindMapBoundary>
+      </div>
+    </>
   );
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// LAYOUT A — RADIAL BURST  (chapters 0,3,6,9,12,15 …)
-// Dark orbital design. Root ➜ Topics ➜ Subtopics ➜ Concept tags
+// LAYOUT A — RADIAL BURST  ★ ENHANCED COSMIC GEM EDITION ★
 // ══════════════════════════════════════════════════════════════════════
 function RadialMM({s,col,name,uid}){
   const nT=s.length;
-  const W=760,H=530,CX=380,CY=265;
-  const R1=138,R2=262,R3=348;
+  const W=800,H=560,CX=400,CY=280;
+  const R1=148,R2=272,R3=368;
   const angOff=-Math.PI/2;
   const topAngles=s.map((_,i)=>angOff+(2*Math.PI/nT)*i);
   const arcPerTopic=2*Math.PI/nT;
   const subSpreadMax=Math.min(arcPerTopic*0.76,1.08);
   const showC=nT<=5;
 
+  // Derive a second accent color for gradient variety
+  const col2 = col.replace(/^#/,"");
+  const r2=parseInt(col2.slice(0,2),16);
+  const g2=parseInt(col2.slice(2,4),16);
+  const b2=parseInt(col2.slice(4,6),16);
+  const col3 = `#${Math.min(255,r2+60).toString(16).padStart(2,"0")}${Math.min(255,g2+30).toString(16).padStart(2,"0")}${Math.min(255,b2+80).toString(16).padStart(2,"0")}`;
+
   return(
-    <div style={{overflowX:"auto",borderRadius:18,border:`1.5px solid ${col}40`,
-      background:"linear-gradient(135deg,#0a0820 0%,#160c38 50%,#0d0a2e 100%)"}}>
+    <div style={{overflowX:"auto",borderRadius:20,
+      border:`1.5px solid ${col}55`,
+      background:`linear-gradient(135deg,#06041a 0%,#0f0730 40%,#08062a 70%,#0a0428 100%)`,
+      boxShadow:`0 0 40px ${col}22, 0 0 80px ${col}0a, inset 0 0 60px rgba(0,0,0,0.6)`}}>
       <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:620,display:"block",padding:"6px 0"}}>
         <defs>
+          {/* Radial bg glow */}
           <radialGradient id={`rBg-${uid}`} cx="50%" cy="50%" r="55%">
-            <stop offset="0%" stopColor={col} stopOpacity="0.2"/>
-            <stop offset="60%" stopColor={col} stopOpacity="0.05"/>
+            <stop offset="0%" stopColor={col} stopOpacity="0.25"/>
+            <stop offset="50%" stopColor={col} stopOpacity="0.07"/>
             <stop offset="100%" stopColor={col} stopOpacity="0"/>
           </radialGradient>
-          <linearGradient id={`rRoot-${uid}`} x1="0%" y1="0%" x2="110%" y2="110%">
-            <stop offset="0%" stopColor={col}/>
-            <stop offset="100%" stopColor={col+"99"}/>
+          {/* Root gem gradient */}
+          <radialGradient id={`rGem-${uid}`} cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.35"/>
+            <stop offset="40%" stopColor={col3}/>
+            <stop offset="100%" stopColor={col}/>
+          </radialGradient>
+          {/* Topic node gradient */}
+          <linearGradient id={`rTopic-${uid}`} x1="0%" y1="0%" x2="110%" y2="110%">
+            <stop offset="0%" stopColor={col3} stopOpacity="0.95"/>
+            <stop offset="100%" stopColor={col} stopOpacity="0.85"/>
           </linearGradient>
-          <linearGradient id={`rTopic-${uid}`} x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor={col}/>
-            <stop offset="100%" stopColor={col+"bb"}/>
+          {/* Spoke gradient */}
+          <linearGradient id={`rSpoke-${uid}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={col} stopOpacity="0.9"/>
+            <stop offset="100%" stopColor={col} stopOpacity="0.15"/>
           </linearGradient>
-          <filter id={`rGlow-${uid}`} x="-40%" y="-40%" width="180%" height="180%">
-            <feGaussianBlur stdDeviation="5" result="blur"/>
+          {/* Glow filter */}
+          <filter id={`rGlow-${uid}`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
-          <filter id={`rShadow-${uid}`} x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor={col} floodOpacity="0.3"/>
+          {/* Soft glow for spokes */}
+          <filter id={`rLineGlow-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
-          <filter id={`rSub-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="1" stdDeviation="2.5" floodColor={col} floodOpacity="0.2"/>
+          {/* Drop shadow for nodes */}
+          <filter id={`rShadow-${uid}`} x="-40%" y="-40%" width="180%" height="180%">
+            <feDropShadow dx="0" dy="3" stdDeviation="6" floodColor={col} floodOpacity="0.5"/>
           </filter>
+          <filter id={`rSubShadow-${uid}`} x="-30%" y="-30%" width="160%" height="160%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3.5" floodColor={col} floodOpacity="0.35"/>
+          </filter>
+          {/* Star clip */}
+          <clipPath id={`rClip-${uid}`}>
+            <rect width={W} height={H}/>
+          </clipPath>
         </defs>
 
-        {/* Background aura */}
-        <circle cx={CX} cy={CY} r={R3+55} fill={`url(#rBg-${uid})`}/>
+        {/* ── Deep space background ── */}
+        <rect width={W} height={H} fill="#06041a" rx="18"/>
 
-        {/* Orbital decorative rings */}
-        <circle cx={CX} cy={CY} r={R1-8} fill="none" stroke={col} strokeWidth="0.7" strokeOpacity="0.14" strokeDasharray="4 10"/>
-        <circle cx={CX} cy={CY} r={R2+10} fill="none" stroke={col} strokeWidth="0.5" strokeOpacity="0.09" strokeDasharray="2 16"/>
-        {showC&&<circle cx={CX} cy={CY} r={R3+14} fill="none" stroke={col} strokeWidth="0.4" strokeOpacity="0.06" strokeDasharray="1 22"/>}
+        {/* ── Scattered star particles ── */}
+        {[...Array(32)].map((_,i)=>{
+          const px = ((i*137.5)%1)*W;
+          const py = ((i*97.3+13)%1)*H;
+          const r  = i%5===0?1.5:i%3===0?1.1:0.7;
+          return <circle key={i} cx={px} cy={py} r={r} fill="#fff" opacity={0.15+0.25*(i%4)/3}/>;
+        })}
+
+        {/* ── Radial aura ── */}
+        <circle cx={CX} cy={CY} r={R3+70} fill={`url(#rBg-${uid})`}/>
+
+        {/* ── Decorative orbital rings ── */}
+        <circle cx={CX} cy={CY} r={R1-12} fill="none" stroke={col} strokeWidth="1.2" strokeOpacity="0.2" strokeDasharray="3 9"/>
+        <circle cx={CX} cy={CY} r={R1-6}  fill="none" stroke={col3} strokeWidth="0.5" strokeOpacity="0.12"/>
+        <circle cx={CX} cy={CY} r={R2+14} fill="none" stroke={col} strokeWidth="0.8" strokeOpacity="0.13" strokeDasharray="2 14"/>
+        {showC&&<circle cx={CX} cy={CY} r={R3+20} fill="none" stroke={col} strokeWidth="0.5" strokeOpacity="0.08" strokeDasharray="1 20"/>}
+        {/* Outer glow ring */}
+        <circle cx={CX} cy={CY} r={R2+2} fill="none" stroke={col3} strokeWidth="0.4" strokeOpacity="0.09"/>
 
         {s.map((topic,i)=>{
           const ta=topAngles[i];
@@ -2818,8 +3041,21 @@ function RadialMM({s,col,name,uid}){
           const spr=nS>1?subSpreadMax:0;
           return(
             <g key={i}>
-              {/* Root → Topic: straight spoke */}
-              <line x1={CX} y1={CY} x2={tx} y2={ty} stroke={col} strokeWidth="2.5" strokeOpacity="0.45" strokeLinecap="round"/>
+              {/* ── Root → Topic: glowing gradient spoke ── */}
+              <line x1={CX} y1={CY} x2={tx} y2={ty}
+                stroke={col} strokeWidth="3" strokeOpacity="0.55" strokeLinecap="round"
+                filter={`url(#rLineGlow-${uid})`}/>
+              {/* Accent thin line on top */}
+              <line x1={CX+(tx-CX)*0.15} y1={CY+(ty-CY)*0.15}
+                x2={CX+(tx-CX)*0.85} y2={CY+(ty-CY)*0.85}
+                stroke={col3} strokeWidth="0.8" strokeOpacity="0.4" strokeLinecap="round"/>
+              {/* Diamond at midpoint */}
+              {(()=>{
+                const mx=(CX+tx)/2, my=(CY+ty)/2;
+                const s4=3.5;
+                return <polygon points={`${mx},${my-s4} ${mx+s4},${my} ${mx},${my+s4} ${mx-s4},${my}`}
+                  fill={col3} opacity="0.7"/>;
+              })()}
 
               {topic.subtopics.map((sub,j)=>{
                 const sa=nS>1?ta+(j-(nS-1)/2)*(spr/Math.max(nS-1,1)):ta;
@@ -2829,11 +3065,15 @@ function RadialMM({s,col,name,uid}){
                 const cSpr=Math.min(0.36,0.55/Math.max(nC,1));
                 return(
                   <g key={j}>
-                    {/* Topic → Subtopic: curved dashed */}
-                    <path d={`M${tx} ${ty}Q${(tx+sx)/2+Math.cos(sa+Math.PI/2)*18} ${(ty+sy)/2+Math.sin(sa+Math.PI/2)*18} ${sx} ${sy}`}
-                      stroke={col} strokeWidth="1.6" fill="none" strokeOpacity="0.28" strokeDasharray="5 4" strokeLinecap="round"/>
+                    {/* ── Topic → Subtopic: curved glowing path ── */}
+                    <path d={`M${tx} ${ty}Q${(tx+sx)/2+Math.cos(sa+Math.PI/2)*22} ${(ty+sy)/2+Math.sin(sa+Math.PI/2)*22} ${sx} ${sy}`}
+                      stroke={col} strokeWidth="2" fill="none" strokeOpacity="0.4"
+                      strokeDasharray="6 4" strokeLinecap="round" filter={`url(#rLineGlow-${uid})`}/>
+                    {/* Bright accent on connector */}
+                    <path d={`M${tx} ${ty}Q${(tx+sx)/2+Math.cos(sa+Math.PI/2)*22} ${(ty+sy)/2+Math.sin(sa+Math.PI/2)*22} ${sx} ${sy}`}
+                      stroke={col3} strokeWidth="0.7" fill="none" strokeOpacity="0.25" strokeDasharray="3 8"/>
 
-                    {/* Concept pills */}
+                    {/* ── Concept pills (outer ring) ── */}
                     {showC&&sub.concepts.slice(0,3).map((c,k)=>{
                       const ca=sa+(k-(nC-1)/2)*cSpr;
                       const cx_=CX+Math.cos(ca)*R3;
@@ -2841,67 +3081,100 @@ function RadialMM({s,col,name,uid}){
                       const label=mmTrunc(mmTerm(c),20);
                       return(
                         <g key={k}>
-                          <line x1={sx} y1={sy} x2={cx_} y2={cy_} stroke={col} strokeWidth="1" strokeOpacity="0.17"/>
-                          <rect x={cx_-46} y={cy_-10} width="92" height="20" rx="10"
-                            fill={col+"18"} stroke={col+"38"} strokeWidth="0.9"/>
-                          <text x={cx_} y={cy_+5} textAnchor="middle"
-                            fill={col} fontSize="7.5" fontWeight="600" fontFamily="'Lora',serif" opacity="0.9">
+                          <line x1={sx} y1={sy} x2={cx_} y2={cy_}
+                            stroke={col} strokeWidth="1.2" strokeOpacity="0.2" strokeLinecap="round"/>
+                          {/* Concept pill — glowing */}
+                          <rect x={cx_-48} y={cy_-11} width="96" height="22" rx="11"
+                            fill={`${col}22`} stroke={col} strokeWidth="1"
+                            strokeOpacity="0.45"/>
+                          {/* Accent inner line */}
+                          <rect x={cx_-44} y={cy_-8} width="88" height="16" rx="8"
+                            fill="none" stroke="#fff" strokeWidth="0.5" strokeOpacity="0.07"/>
+                          {/* Left dot */}
+                          <circle cx={cx_-36} cy={cy_} r="2.2" fill={col3} opacity="0.7"/>
+                          <text x={cx_-28} y={cy_+4.5}
+                            fill={col3} fontSize="7.5" fontWeight="700"
+                            fontFamily="'Lora',serif" opacity="0.95">
                             {label}
                           </text>
                         </g>
                       );
                     })}
 
-                    {/* Subtopic node — pill */}
-                    <rect x={sx-54} y={sy-14} width="108" height="28" rx="14"
-                      fill="#130e2d" stroke={col} strokeWidth="1.6" filter={`url(#rSub-${uid})`}/>
+                    {/* ── Subtopic node — jewel pill ── */}
+                    {/* Shadow glow */}
+                    <rect x={sx-57} y={sy-16} width="114" height="32" rx="16"
+                      fill={col} opacity="0.12" filter={`url(#rGlow-${uid})`}/>
+                    <rect x={sx-56} y={sy-15} width="112" height="30" rx="15"
+                      fill="#0d0b28" stroke={col} strokeWidth="1.8"
+                      filter={`url(#rSubShadow-${uid})`}/>
+                    {/* Inner highlight */}
+                    <rect x={sx-52} y={sy-12} width="104" height="24" rx="12"
+                      fill="none" stroke={col3} strokeWidth="0.6" strokeOpacity="0.3"/>
+                    {/* Inner glow top edge */}
+                    <line x1={sx-44} y1={sy-11} x2={sx+44} y2={sy-11}
+                      stroke="#fff" strokeWidth="0.5" strokeOpacity="0.12" strokeLinecap="round"/>
                     <text x={sx} y={sy+5.5} textAnchor="middle"
-                      fill={col} fontSize="9.5" fontWeight="700" fontFamily="'Lora',serif">
+                      fill={col3} fontSize="9.5" fontWeight="700" fontFamily="'Lora',serif">
                       {mmTrunc(sub.name,17)}
                     </text>
                   </g>
                 );
               })}
 
-              {/* Topic node — glowing ellipse */}
-              <ellipse cx={tx} cy={ty} rx="57" ry="22"
-                fill={`url(#rTopic-${uid})`} stroke={col} strokeWidth="2"
+              {/* ── Topic node — glowing faceted ellipse ── */}
+              {/* Outer glow halo */}
+              <ellipse cx={tx} cy={ty} rx="65" ry="26"
+                fill={col} opacity="0.18" filter={`url(#rGlow-${uid})`}/>
+              {/* Main body */}
+              <ellipse cx={tx} cy={ty} rx="59" ry="23"
+                fill={`url(#rTopic-${uid})`} stroke={col3} strokeWidth="1.8"
                 filter={`url(#rShadow-${uid})`}/>
-              <ellipse cx={tx} cy={ty} rx="53" ry="18"
-                fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1"/>
+              {/* Inner bevel */}
+              <ellipse cx={tx} cy={ty} rx="55" ry="19"
+                fill="none" stroke="rgba(255,255,255,0.2)" strokeWidth="1"/>
+              {/* Tiny shine dot */}
+              <circle cx={tx-18} cy={ty-7} r="3" fill="#fff" opacity="0.22"/>
               <text x={tx} y={ty+5} textAnchor="middle"
-                fill="#fff" fontSize="10" fontWeight="800"
+                fill="#fff" fontSize="10.5" fontWeight="800"
                 fontFamily="'Josefin Sans',sans-serif" letterSpacing="0.5">
-                {mmTrunc(topic.topic,15)}
+                {mmTrunc(topic.topic,14)}
               </text>
             </g>
           );
         })}
 
-        {/* Root node — layered glow ellipse */}
-        <ellipse cx={CX} cy={CY} rx="88" ry="34" fill={col} opacity="0.15" filter={`url(#rGlow-${uid})`}/>
-        <ellipse cx={CX} cy={CY} rx="84" ry="32" fill={`url(#rRoot-${uid})`}/>
-        <ellipse cx={CX} cy={CY} rx="80" ry="28" fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5"/>
+        {/* ── Root node — multi-layer gem ── */}
+        {/* Outer glow orb */}
+        <ellipse cx={CX} cy={CY} rx="98" ry="40" fill={col} opacity="0.2" filter={`url(#rGlow-${uid})`}/>
+        {/* Main gem body */}
+        <ellipse cx={CX} cy={CY} rx="90" ry="36" fill={`url(#rGem-${uid})`} filter={`url(#rShadow-${uid})`}/>
+        {/* Facet rings */}
+        <ellipse cx={CX} cy={CY} rx="86" ry="32" fill="none" stroke="rgba(255,255,255,0.28)" strokeWidth="1.5"/>
+        <ellipse cx={CX} cy={CY} rx="78" ry="26" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1"/>
+        {/* Specular highlights */}
+        <ellipse cx={CX-24} cy={CY-12} rx="18" ry="7" fill="#fff" opacity="0.15"/>
+        <circle cx={CX-30} cy={CY-14} r="4" fill="#fff" opacity="0.25"/>
         {mmSplitName(name).map((line,i,arr)=>(
-          <text key={i} x={CX} y={CY+(i-(arr.length-1)/2)*15+5}
-            textAnchor="middle" fill="#fff" fontSize="13" fontWeight="900"
-            fontFamily="'Bebas Neue',sans-serif" letterSpacing="1.2">
+          <text key={i} x={CX} y={CY+(i-(arr.length-1)/2)*16+6}
+            textAnchor="middle" fill="#fff" fontSize="14" fontWeight="900"
+            fontFamily="'Bebas Neue',sans-serif" letterSpacing="1.5"
+            style={{filter:"drop-shadow(0 0 8px rgba(255,255,255,0.4))"}}>
             {mmTrunc(line,18)}
           </text>
         ))}
 
-        {/* Legend row */}
-        <g opacity="0.55">
-          {[["Topic",56,col],["Subtopic",160,col+"cc"],["Concept",274,col+"99"]].map(([lbl,lx,lc])=>(
-            <g key={lbl}>
-              <rect x={lx} y={H-20} width={lbl==="Topic"?20:lbl==="Subtopic"?16:12}
-                height={lbl==="Topic"?20:lbl==="Subtopic"?16:12}
-                rx={lbl==="Topic"?10:lbl==="Subtopic"?8:6}
-                fill={lc} y={H-(lbl==="Topic"?20:lbl==="Subtopic"?16:12)-2}/>
-              <text x={lx+(lbl==="Topic"?26:lbl==="Subtopic"?22:18)} y={H-8}
-                fill="rgba(255,255,255,0.5)" fontSize="8.5" fontWeight="600"
-                fontFamily="'Josefin Sans',sans-serif" letterSpacing="0.5">{lbl}</text>
-            </g>
+        {/* ── Corner ornament ── */}
+        <text x="12" y="22" fill={col} fontSize="16" opacity="0.3" fontFamily="serif">✦</text>
+        <text x={W-24} y="22" fill={col} fontSize="16" opacity="0.3" fontFamily="serif">✦</text>
+        <text x="12" y={H-8} fill={col} fontSize="16" opacity="0.3" fontFamily="serif">✦</text>
+        <text x={W-24} y={H-8} fill={col} fontSize="16" opacity="0.3" fontFamily="serif">✦</text>
+
+        {/* ── Legend ── */}
+        <g opacity="0.6">
+          {[["● Topic",52,col],["◆ Subtopic",162,col3],["· Concept",278,col+"cc"]].map(([lbl,lx,lc])=>(
+            <text key={lbl} x={lx} y={H-7} fill={lc} fontSize="8.5" fontWeight="700"
+              fontFamily="'Josefin Sans',sans-serif" letterSpacing="0.5">{lbl}</text>
           ))}
         </g>
       </svg>
@@ -2910,14 +3183,12 @@ function RadialMM({s,col,name,uid}){
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// LAYOUT B — HORIZONTAL TREE  (chapters 1,4,7,10,13 …)
-// Light academic style. Root ❱ Topics ❱ Subtopics ❱ Concept tags
+// LAYOUT B — HORIZONTAL TREE  ★ ENHANCED COSMIC DARK EDITION ★
 // ══════════════════════════════════════════════════════════════════════
 function HTreeMM({s,col,name,uid}){
   const MAX_C=4;
-  const CH=24,PAD_TOP=32,GAP_TOPIC=20;
+  const CH=25,PAD_TOP=36,GAP_TOPIC=22;
 
-  // Build layout — compute Y positions
   let curY=PAD_TOP;
   const topics=s.map(topic=>{
     const subs=topic.subtopics.map(sub=>{
@@ -2936,201 +3207,305 @@ function HTreeMM({s,col,name,uid}){
     return{...topic,subtopics:subs,y:topicY};
   });
 
-  const H=Math.max(curY+PAD_TOP,260);
-  const W=920;
-  const RX=72,TX=218,SX=408,COX=604;
+  const H=Math.max(curY+PAD_TOP,280);
+  const W=960;
+  const RX=78,TX=230,SX=430,COX=630;
   const rootY=topics.length?topics.reduce((a,b)=>a+b.y,0)/topics.length:H/2;
 
+  // Accent color variant
+  const col2 = col.replace(/^#/,"");
+  const r2=parseInt(col2.slice(0,2),16);
+  const g2=parseInt(col2.slice(2,4),16);
+  const b2=parseInt(col2.slice(4,6),16);
+  const col3 = `#${Math.min(255,r2+55).toString(16).padStart(2,"0")}${Math.min(255,g2+25).toString(16).padStart(2,"0")}${Math.min(255,b2+85).toString(16).padStart(2,"0")}`;
+
   return(
-    <div style={{overflowX:"auto",borderRadius:18,border:`1.5px solid ${col}28`,
-      background:"linear-gradient(150deg,#faf9ff 0%,#f4f0fe 60%,#ede9fe28 100%)"}}>
-      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:760,display:"block"}}>
+    <div style={{overflowX:"auto",borderRadius:20,border:`1.5px solid ${col}50`,
+      background:"linear-gradient(150deg,#060418 0%,#0c0728 55%,#060520 100%)",
+      boxShadow:`0 0 40px ${col}18, inset 0 0 60px rgba(0,0,0,0.5)`}}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:800,display:"block"}}>
         <defs>
           <linearGradient id={`hGrad-${uid}`} x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor={col}/>
-            <stop offset="100%" stopColor={col+"cc"}/>
+            <stop offset="0%" stopColor={col3}/>
+            <stop offset="100%" stopColor={col}/>
           </linearGradient>
-          <filter id={`hShadow-${uid}`} x="-25%" y="-30%" width="150%" height="160%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor={col} floodOpacity="0.2"/>
+          <radialGradient id={`hRootGem-${uid}`} cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.3"/>
+            <stop offset="50%" stopColor={col3}/>
+            <stop offset="100%" stopColor={col}/>
+          </radialGradient>
+          <linearGradient id={`hConc-${uid}`} x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stopColor={col} stopOpacity="0.25"/>
+            <stop offset="100%" stopColor={col3} stopOpacity="0.12"/>
+          </linearGradient>
+          <filter id={`hGlow-${uid}`} x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
-          <pattern id={`hDot-${uid}`} x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
-            <circle cx="11" cy="11" r="1.2" fill={col} opacity="0.09"/>
+          <filter id={`hShadow-${uid}`} x="-30%" y="-35%" width="160%" height="170%">
+            <feDropShadow dx="0" dy="3" stdDeviation="5" floodColor={col} floodOpacity="0.45"/>
+          </filter>
+          <filter id={`hSubShadow-${uid}`} x="-25%" y="-30%" width="150%" height="160%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3.5" floodColor={col} floodOpacity="0.3"/>
+          </filter>
+          <filter id={`hLineGlow-${uid}`} x="-10%" y="-20%" width="120%" height="140%">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          {/* Dot pattern bg */}
+          <pattern id={`hDot-${uid}`} x="0" y="0" width="24" height="24" patternUnits="userSpaceOnUse">
+            <circle cx="12" cy="12" r="0.8" fill={col} opacity="0.08"/>
           </pattern>
         </defs>
 
-        <rect width={W} height={H} fill={`url(#hDot-${uid})`}/>
+        {/* Background */}
+        <rect width={W} height={H} fill="#060418" rx="18"/>
+        <rect width={W} height={H} fill={`url(#hDot-${uid})`} rx="18"/>
 
-        {/* Column separator lines */}
-        {[TX-26,SX-30,COX-26].map((x,i)=>(
-          <line key={i} x1={x} y1={0} x2={x} y2={H} stroke={col} strokeWidth="0.6" strokeOpacity="0.1"/>
+        {/* Star particles */}
+        {[...Array(20)].map((_,i)=>{
+          const px=((i*173)%1)*W, py=((i*89+7)%1)*H;
+          return <circle key={i} cx={px} cy={py} r={i%4===0?1.2:0.7} fill="#fff" opacity={0.08+0.15*(i%3)/2}/>;
+        })}
+
+        {/* Vertical column separators */}
+        {[TX-32,SX-36,COX-32].map((x,i)=>(
+          <line key={i} x1={x} y1={16} x2={x} y2={H-16}
+            stroke={col} strokeWidth="0.8" strokeOpacity="0.12" strokeDasharray="4 8"/>
         ))}
 
         {/* Column headers */}
-        {[{l:"TOPICS",x:TX},{l:"SUBTOPICS",x:SX},{l:"CONCEPTS",x:COX+90}].map(({l,x})=>(
-          <text key={l} x={x} y={14} textAnchor="middle"
-            fill={col} fontSize="7.5" fontWeight="800" letterSpacing="1.8" opacity="0.4"
+        {[{l:"TOPICS",x:TX},{l:"SUBTOPICS",x:SX},{l:"CONCEPTS",x:COX+100}].map(({l,x})=>(
+          <text key={l} x={x} y={16} textAnchor="middle"
+            fill={col3} fontSize="8" fontWeight="800" letterSpacing="2" opacity="0.5"
             fontFamily="'Josefin Sans',sans-serif">{l}</text>
         ))}
 
-        {/* Topic spine */}
+        {/* Topic spine vertical bar */}
         {topics.length>1&&(
           <line x1={TX} y1={topics[0].y} x2={TX} y2={topics[topics.length-1].y}
-            stroke={col} strokeWidth="2" strokeOpacity="0.14" strokeLinecap="round"/>
+            stroke={col} strokeWidth="2.5" strokeOpacity="0.18" strokeLinecap="round"/>
         )}
 
         {topics.map((topic,i)=>(
           <g key={i}>
-            {/* Root → Topic */}
-            <path d={mmBz(RX+40,rootY,TX-38,topic.y)}
-              stroke={col} strokeWidth="2.2" fill="none" strokeOpacity="0.48" strokeLinecap="round"/>
+            {/* ── Root → Topic: flowing bezier ── */}
+            <path d={mmBz(RX+46,rootY,TX-44,topic.y)}
+              stroke={col} strokeWidth="2.5" fill="none" strokeOpacity="0.5" strokeLinecap="round"
+              filter={`url(#hLineGlow-${uid})`}/>
+            {/* Accent line */}
+            <path d={mmBz(RX+46,rootY,TX-44,topic.y)}
+              stroke={col3} strokeWidth="0.8" fill="none" strokeOpacity="0.3" strokeLinecap="round"/>
+            {/* Junction dot at topic end */}
+            <circle cx={TX-44} cy={topic.y} r="3.5" fill={col3} opacity="0.8"/>
 
             {/* Subtopic spine */}
             {topic.subtopics.length>1&&(
               <line x1={SX} y1={topic.subtopics[0].y} x2={SX} y2={topic.subtopics[topic.subtopics.length-1].y}
-                stroke={col} strokeWidth="1.2" strokeOpacity="0.13" strokeLinecap="round"/>
+                stroke={col} strokeWidth="1.5" strokeOpacity="0.16" strokeLinecap="round"/>
             )}
 
             {topic.subtopics.map((sub,j)=>(
               <g key={j}>
-                {/* Topic → Subtopic */}
-                <path d={mmBz(TX+38,topic.y,SX-56,sub.y)}
-                  stroke={col} strokeWidth="1.6" fill="none" strokeOpacity="0.3"
-                  strokeDasharray="5 3" strokeLinecap="round"/>
+                {/* ── Topic → Subtopic: dashed bezier ── */}
+                <path d={mmBz(TX+44,topic.y,SX-60,sub.y)}
+                  stroke={col} strokeWidth="1.8" fill="none" strokeOpacity="0.38"
+                  strokeDasharray="6 4" strokeLinecap="round"
+                  filter={`url(#hLineGlow-${uid})`}/>
+                <path d={mmBz(TX+44,topic.y,SX-60,sub.y)}
+                  stroke={col3} strokeWidth="0.7" fill="none" strokeOpacity="0.2" strokeDasharray="3 9"/>
+                {/* Junction dot */}
+                <circle cx={SX-60} cy={sub.y} r="2.5" fill={col} opacity="0.6"/>
 
                 {/* Concept spine */}
                 {sub.concepts.length>1&&(
                   <line x1={COX} y1={sub.concepts[0].y} x2={COX} y2={sub.concepts[sub.concepts.length-1].y}
-                    stroke={col} strokeWidth="0.8" strokeOpacity="0.12" strokeLinecap="round"/>
+                    stroke={col} strokeWidth="1" strokeOpacity="0.14" strokeLinecap="round"/>
                 )}
 
                 {sub.concepts.map((c,k)=>(
                   <g key={k}>
-                    {/* Subtopic → Concept */}
-                    <path d={mmBz(SX+56,sub.y,COX,c.y)}
-                      stroke={col} strokeWidth="1" fill="none" strokeOpacity="0.22" strokeLinecap="round"/>
-                    <rect x={COX} y={c.y-10} width="196" height="20" rx="10"
-                      fill={col+"12"} stroke={col+"28"} strokeWidth="0.9"/>
-                    <circle cx={COX+12} cy={c.y} r="2.5" fill={col} opacity="0.45"/>
-                    <text x={COX+22} y={c.y+4.5}
-                      fill="#1e1b4b" fontSize="8.5" fontWeight="500"
+                    {/* ── Subtopic → Concept: bezier ── */}
+                    <path d={mmBz(SX+60,sub.y,COX,c.y)}
+                      stroke={col} strokeWidth="1.2" fill="none" strokeOpacity="0.25" strokeLinecap="round"/>
+
+                    {/* ── Concept pill — glowing dark ── */}
+                    <rect x={COX} y={c.y-11} width="204" height="22" rx="11"
+                      fill={`url(#hConc-${uid})`} stroke={col} strokeWidth="1.1" strokeOpacity="0.4"/>
+                    <rect x={COX+2} y={c.y-9} width="200" height="18" rx="9"
+                      fill="none" stroke={col3} strokeWidth="0.5" strokeOpacity="0.18"/>
+                    <circle cx={COX+10} cy={c.y} r="2.8" fill={col3} opacity="0.7"/>
+                    <text x={COX+20} y={c.y+4.5}
+                      fill={col3} fontSize="8.5" fontWeight="600"
                       fontFamily="'Lora',serif">
                       {c.text}
                     </text>
                   </g>
                 ))}
 
-                {/* Subtopic node */}
-                <rect x={SX-56} y={sub.y-15} width="112" height="30" rx="15"
-                  fill="#fff" stroke={col} strokeWidth="1.7"
-                  filter={`url(#hShadow-${uid})`}/>
+                {/* ── Subtopic node — glowing capsule ── */}
+                <rect x={SX-62} y={sub.y-16} width="124" height="32" rx="16"
+                  fill={col} opacity="0.14" filter={`url(#hGlow-${uid})`}/>
+                <rect x={SX-60} y={sub.y-15} width="120" height="30" rx="15"
+                  fill="#0d0b28" stroke={col} strokeWidth="1.8"
+                  filter={`url(#hSubShadow-${uid})`}/>
+                <rect x={SX-56} y={sub.y-11} width="112" height="22" rx="11"
+                  fill="none" stroke={col3} strokeWidth="0.6" strokeOpacity="0.25"/>
+                {/* Shine line */}
+                <line x1={SX-48} y1={sub.y-11} x2={SX+48} y2={sub.y-11}
+                  stroke="#fff" strokeWidth="0.5" strokeOpacity="0.12" strokeLinecap="round"/>
                 <text x={SX} y={sub.y+5.5} textAnchor="middle"
-                  fill={col} fontSize="9.5" fontWeight="700"
+                  fill={col3} fontSize="9.5" fontWeight="700"
                   fontFamily="'Lora',serif">
                   {mmTrunc(sub.name,17)}
                 </text>
               </g>
             ))}
 
-            {/* Topic node — pill with gradient */}
-            <rect x={TX-38} y={topic.y-17} width="76" height="34" rx="17"
+            {/* ── Topic node — glowing gradient pill ── */}
+            <rect x={TX-44} y={topic.y-19} width="88" height="38" rx="19"
+              fill={col} opacity="0.2" filter={`url(#hGlow-${uid})`}/>
+            <rect x={TX-42} y={topic.y-18} width="84" height="36" rx="18"
               fill={`url(#hGrad-${uid})`} filter={`url(#hShadow-${uid})`}/>
-            <rect x={TX-35} y={topic.y-14} width="70" height="28" rx="14"
+            <rect x={TX-38} y={topic.y-14} width="76" height="28" rx="14"
               fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.2"/>
+            {/* Shine */}
+            <circle cx={TX-16} cy={topic.y-8} r="4" fill="#fff" opacity="0.18"/>
             <text x={TX} y={topic.y+5.5} textAnchor="middle"
-              fill="#fff" fontSize="9.5" fontWeight="800"
+              fill="#fff" fontSize="10" fontWeight="800"
               fontFamily="'Josefin Sans',sans-serif" letterSpacing="0.6">
               {mmTrunc(topic.topic,12)}
             </text>
           </g>
         ))}
 
-        {/* Root node — capsule */}
-        <rect x={RX-44} y={rootY-26} width="88" height="52" rx="26"
-          fill={col} filter={`url(#hShadow-${uid})`}/>
-        <rect x={RX-40} y={rootY-22} width="80" height="44" rx="22"
-          fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.5"/>
+        {/* ── Root node — multi-layer gem capsule ── */}
+        {/* Outer halo */}
+        <rect x={RX-52} y={rootY-30} width="104" height="60" rx="30"
+          fill={col} opacity="0.22" filter={`url(#hGlow-${uid})`}/>
+        {/* Main body */}
+        <rect x={RX-48} y={rootY-27} width="96" height="54" rx="27"
+          fill={`url(#hRootGem-${uid})`} filter={`url(#hShadow-${uid})`}/>
+        {/* Facet rings */}
+        <rect x={RX-44} y={rootY-23} width="88" height="46" rx="23"
+          fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5"/>
+        <rect x={RX-38} y={rootY-17} width="76" height="34" rx="17"
+          fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>
+        {/* Specular */}
+        <circle cx={RX-18} cy={rootY-14} r="5" fill="#fff" opacity="0.22"/>
         {mmSplitName(name).map((line,i,arr)=>(
-          <text key={i} x={RX} y={rootY+(i-(arr.length-1)/2)*15+5}
-            textAnchor="middle" fill="#fff" fontSize="10.5" fontWeight="900"
-            fontFamily="'Bebas Neue',sans-serif" letterSpacing="0.8">
+          <text key={i} x={RX} y={rootY+(i-(arr.length-1)/2)*16+6}
+            textAnchor="middle" fill="#fff" fontSize="11" fontWeight="900"
+            fontFamily="'Bebas Neue',sans-serif" letterSpacing="0.9">
             {mmTrunc(line,12)}
           </text>
         ))}
+
+        {/* Corner ornaments */}
+        <text x="8" y="20" fill={col} fontSize="14" opacity="0.25" fontFamily="serif">✦</text>
+        <text x={W-20} y="20" fill={col} fontSize="14" opacity="0.25" fontFamily="serif">✦</text>
       </svg>
     </div>
   );
 }
 
 // ══════════════════════════════════════════════════════════════════════
-// LAYOUT C — VERTICAL CASCADE  (chapters 2,5,8,11,14 …)
-// Dark layered design. Concepts stack VERTICALLY under each subtopic
-// so nothing ever overlaps on the concept row.
+// LAYOUT C — VERTICAL CASCADE  ★ ENHANCED COSMIC DARK EDITION ★
 // ══════════════════════════════════════════════════════════════════════
 function VTreeMM({s,col,name,uid}){
   const nT=s.length;
   const MAX_C=3;
-  const CON_H=26;   // height per concept pill row
-  const PAD=10;     // gap between subtopic node bottom and first concept
+  const CON_H=28;
+  const PAD=12;
 
-  // ── Pre-compute all X positions ──────────────────────────────────────
-  // Give each topic an equal horizontal slice
-  const slotW=(800-80)/Math.max(nT,1);
-  const W=Math.max(nT*slotW+80, 700);
+  const slotW=(820-80)/Math.max(nT,1);
+  const W=Math.max(nT*slotW+80, 720);
   const topXs=s.map((_,i)=>40+(i+0.5)*slotW);
 
-  // Per-topic: subtopics spread horizontally within the slot
   const subXsAll=s.map((topic,i)=>{
     const tx=topXs[i];
     const nS=topic.subtopics.length;
-    const spread=nS>1?Math.min(slotW*0.82,(nS-1)*70):0;
+    const spread=nS>1?Math.min(slotW*0.82,(nS-1)*72):0;
     return topic.subtopics.map((_,j)=>
       nS>1?tx+(j-(nS-1)/2)*(spread/Math.max(nS-1,1)):tx);
   });
 
-  // ── Fixed Y positions for root / topics / subtopic tops ──────────────
-  const rootY=48;
-  const topY=128;
-  const subTop=210;   // top of subtopic node
-  const subH=32;      // subtopic node height
-  const subBot=subTop+subH;  // bottom of subtopic node
-  const conStartY=subBot+PAD+CON_H/2; // centre of first concept pill
+  const rootY=50;
+  const topY=134;
+  const subTop=220;
+  const subH=34;
+  const subBot=subTop+subH;
+  const conStartY=subBot+PAD+CON_H/2;
 
-  // Tallest column determines canvas height
   const maxCons=s.reduce((m,topic)=>Math.max(m,...topic.subtopics.map(sub=>Math.min(sub.concepts.length,MAX_C))),0);
-  const H=conStartY+maxCons*CON_H+40;
+  const H=conStartY+maxCons*CON_H+50;
+
+  // Accent color variant
+  const col2=col.replace(/^#/,"");
+  const r2=parseInt(col2.slice(0,2),16);
+  const g2=parseInt(col2.slice(2,4),16);
+  const b2=parseInt(col2.slice(4,6),16);
+  const col3=`#${Math.min(255,r2+55).toString(16).padStart(2,"0")}${Math.min(255,g2+30).toString(16).padStart(2,"0")}${Math.min(255,b2+80).toString(16).padStart(2,"0")}`;
 
   return(
-    <div style={{overflowX:"auto",borderRadius:18,border:`1.5px solid ${col}40`,
-      background:"linear-gradient(180deg,#0a0820 0%,#120a30 55%,#0d0a2e 100%)"}}>
+    <div style={{overflowX:"auto",borderRadius:20,border:`1.5px solid ${col}55`,
+      background:"linear-gradient(180deg,#060418 0%,#0e0830 55%,#060420 100%)",
+      boxShadow:`0 0 40px ${col}18, inset 0 0 50px rgba(0,0,0,0.5)`}}>
       <svg viewBox={`0 0 ${W} ${H}`} style={{width:"100%",minWidth:640,display:"block",padding:"6px 0"}}>
         <defs>
           <linearGradient id={`vGrad-${uid}`} x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor={col}/>
-            <stop offset="100%" stopColor={col+"99"}/>
+            <stop offset="0%" stopColor={col3}/>
+            <stop offset="100%" stopColor={col}/>
           </linearGradient>
+          <radialGradient id={`vRootGem-${uid}`} cx="35%" cy="30%" r="70%">
+            <stop offset="0%" stopColor="#fff" stopOpacity="0.3"/>
+            <stop offset="50%" stopColor={col3}/>
+            <stop offset="100%" stopColor={col}/>
+          </radialGradient>
+          <filter id={`vGlow-${uid}`} x="-40%" y="-40%" width="180%" height="180%">
+            <feGaussianBlur stdDeviation="6" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
           <filter id={`vShadow-${uid}`} x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor={col} floodOpacity="0.28"/>
+            <feDropShadow dx="0" dy="3" stdDeviation="5" floodColor={col} floodOpacity="0.45"/>
           </filter>
-          <filter id={`vSubShadow-${uid}`} x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="1" stdDeviation="2.5" floodColor={col} floodOpacity="0.2"/>
+          <filter id={`vSubShadow-${uid}`} x="-25%" y="-25%" width="150%" height="150%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3.5" floodColor={col} floodOpacity="0.3"/>
           </filter>
+          <filter id={`vLineGlow-${uid}`} x="-15%" y="-15%" width="130%" height="130%">
+            <feGaussianBlur stdDeviation="2" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <pattern id={`vDot-${uid}`} x="0" y="0" width="22" height="22" patternUnits="userSpaceOnUse">
+            <circle cx="11" cy="11" r="0.7" fill={col} opacity="0.07"/>
+          </pattern>
         </defs>
 
-        {/* Level marker lines */}
+        {/* Background */}
+        <rect width={W} height={H} fill="#060418" rx="18"/>
+        <rect width={W} height={H} fill={`url(#vDot-${uid})`} rx="18"/>
+
+        {/* Star particles */}
+        {[...Array(24)].map((_,i)=>{
+          const px=((i*157)%1)*W, py=((i*83+11)%1)*H;
+          return <circle key={i} cx={px} cy={py} r={i%5===0?1.3:0.65} fill="#fff" opacity={0.07+0.15*(i%4)/3}/>;
+        })}
+
+        {/* Level lines with ornament */}
         {[[topY,"TOPICS"],[subTop+subH/2,"SUBTOPICS"],[conStartY,"CONCEPTS"]].map(([y,lbl])=>(
           <g key={lbl}>
-            <line x1={0} y1={y} x2={W} y2={y}
-              stroke={col} strokeWidth="0.6" strokeOpacity="0.1"/>
-            <text x={W-8} y={y-5} textAnchor="end"
-              fill={col} fontSize="7.5" fontWeight="700" letterSpacing="1.2"
-              fontFamily="'Josefin Sans',sans-serif" opacity="0.4">{lbl}</text>
+            <line x1={0} y1={y} x2={W} y2={y} stroke={col} strokeWidth="0.8" strokeOpacity="0.13" strokeDasharray="4 12"/>
+            <text x={W-10} y={y-6} textAnchor="end"
+              fill={col3} fontSize="8" fontWeight="700" letterSpacing="1.8"
+              fontFamily="'Josefin Sans',sans-serif" opacity="0.5">{lbl}</text>
           </g>
         ))}
 
         {/* Topics horizontal connector */}
         {nT>1&&(
           <line x1={topXs[0]} y1={topY} x2={topXs[nT-1]} y2={topY}
-            stroke={col} strokeWidth="1.6" strokeOpacity="0.16" strokeLinecap="round"/>
+            stroke={col} strokeWidth="2" strokeOpacity="0.2" strokeLinecap="round"
+            filter={`url(#vLineGlow-${uid})`}/>
         )}
 
         {s.map((topic,i)=>{
@@ -3140,14 +3515,24 @@ function VTreeMM({s,col,name,uid}){
 
           return(
             <g key={i}>
-              {/* Root → Topic */}
-              <path d={mmBz(W/2,rootY+20,tx,topY-18,false)}
-                stroke={col} strokeWidth="2" fill="none" strokeOpacity="0.4" strokeLinecap="round"/>
+              {/* ── Root → Topic: glowing vertical bezier ── */}
+              <path d={mmBz(W/2,rootY+22,tx,topY-20,false)}
+                stroke={col} strokeWidth="2.2" fill="none" strokeOpacity="0.5" strokeLinecap="round"
+                filter={`url(#vLineGlow-${uid})`}/>
+              {/* Accent line */}
+              <path d={mmBz(W/2,rootY+22,tx,topY-20,false)}
+                stroke={col3} strokeWidth="0.8" fill="none" strokeOpacity="0.3" strokeLinecap="round"/>
+              {/* Junction diamond */}
+              {(()=>{
+                const s4=3.5;
+                return <polygon points={`${tx},${topY-20-s4} ${tx+s4},${topY-20} ${tx},${topY-20+s4} ${tx-s4},${topY-20}`}
+                  fill={col3} opacity="0.75"/>;
+              })()}
 
               {/* Subtopic connector bar */}
               {nS>1&&(
                 <line x1={subXs[0]} y1={subTop+subH/2} x2={subXs[nS-1]} y2={subTop+subH/2}
-                  stroke={col} strokeWidth="1" strokeOpacity="0.13" strokeLinecap="round"/>
+                  stroke={col} strokeWidth="1.2" strokeOpacity="0.16" strokeLinecap="round"/>
               )}
 
               {topic.subtopics.map((sub,j)=>{
@@ -3156,43 +3541,58 @@ function VTreeMM({s,col,name,uid}){
 
                 return(
                   <g key={j}>
-                    {/* Topic → Subtopic */}
-                    <path d={mmBz(tx,topY+18,sx,subTop,false)}
-                      stroke={col} strokeWidth="1.5" fill="none"
-                      strokeOpacity="0.28" strokeDasharray="5 3" strokeLinecap="round"/>
+                    {/* ── Topic → Subtopic: dashed bezier ── */}
+                    <path d={mmBz(tx,topY+20,sx,subTop,false)}
+                      stroke={col} strokeWidth="1.8" fill="none"
+                      strokeOpacity="0.38" strokeDasharray="6 4" strokeLinecap="round"
+                      filter={`url(#vLineGlow-${uid})`}/>
+                    <path d={mmBz(tx,topY+20,sx,subTop,false)}
+                      stroke={col3} strokeWidth="0.7" fill="none" strokeOpacity="0.22" strokeDasharray="3 9"/>
 
-                    {/* Concepts — stacked VERTICALLY under each subtopic */}
+                    {/* ── Concepts — stacked vertically ── */}
                     {sub.concepts.slice(0,MAX_C).map((c,k)=>{
                       const cy_=conStartY+k*CON_H;
                       const label=mmTrunc(mmTerm(c),18);
                       return(
                         <g key={k}>
-                          {/* Line from subtopic bottom to first concept, then straight down */}
                           {k===0?(
-                            <line x1={sx} y1={subBot} x2={sx} y2={cy_-10}
-                              stroke={col} strokeWidth="1" strokeOpacity="0.2" strokeLinecap="round"/>
+                            <line x1={sx} y1={subBot} x2={sx} y2={cy_-12}
+                              stroke={col} strokeWidth="1.2" strokeOpacity="0.22" strokeLinecap="round"
+                              filter={`url(#vLineGlow-${uid})`}/>
                           ):(
-                            <line x1={sx} y1={cy_-CON_H+10} x2={sx} y2={cy_-10}
-                              stroke={col} strokeWidth="0.8" strokeOpacity="0.15" strokeLinecap="round"/>
+                            <line x1={sx} y1={cy_-CON_H+12} x2={sx} y2={cy_-12}
+                              stroke={col} strokeWidth="1" strokeOpacity="0.17" strokeLinecap="round"/>
                           )}
-                          {/* Concept pill */}
-                          <rect x={sx-44} y={cy_-10} width="88" height="20" rx="10"
-                            fill={col+"1a"} stroke={col+"40"} strokeWidth="0.9"/>
+                          {/* Concept pill — glowing */}
+                          <rect x={sx-48} y={cy_-12} width="96" height="24" rx="12"
+                            fill={`${col}1e`} stroke={col} strokeWidth="1.1" strokeOpacity="0.5"/>
+                          <rect x={sx-44} y={cy_-9} width="88" height="18" rx="9"
+                            fill="none" stroke={col3} strokeWidth="0.5" strokeOpacity="0.2"/>
+                          {/* Top highlight */}
+                          <line x1={sx-36} y1={cy_-11} x2={sx+36} y2={cy_-11}
+                            stroke="#fff" strokeWidth="0.5" strokeOpacity="0.1" strokeLinecap="round"/>
                           <text x={sx} y={cy_+5} textAnchor="middle"
-                            fill={col} fontSize="7.5" fontWeight="600"
-                            fontFamily="'Lora',serif" opacity="0.92">
+                            fill={col3} fontSize="7.5" fontWeight="700"
+                            fontFamily="'Lora',serif" opacity="0.95">
                             {label}
                           </text>
                         </g>
                       );
                     })}
 
-                    {/* Subtopic node */}
-                    <rect x={sx-47} y={subTop} width="94" height={subH} rx="15"
-                      fill="#100d28" stroke={col} strokeWidth="1.6"
+                    {/* ── Subtopic node — glowing capsule ── */}
+                    <rect x={sx-52} y={subTop-4} width="104" height={subH+8} rx="18"
+                      fill={col} opacity="0.14" filter={`url(#vGlow-${uid})`}/>
+                    <rect x={sx-50} y={subTop} width="100" height={subH} rx="16"
+                      fill="#0d0a28" stroke={col} strokeWidth="1.8"
                       filter={`url(#vSubShadow-${uid})`}/>
-                    <text x={sx} y={subTop+subH/2+5} textAnchor="middle"
-                      fill={col} fontSize="8.5" fontWeight="700"
+                    <rect x={sx-46} y={subTop+4} width="92" height={subH-8} rx="12"
+                      fill="none" stroke={col3} strokeWidth="0.6" strokeOpacity="0.25"/>
+                    {/* Shine */}
+                    <line x1={sx-38} y1={subTop+3} x2={sx+38} y2={subTop+3}
+                      stroke="#fff" strokeWidth="0.5" strokeOpacity="0.13" strokeLinecap="round"/>
+                    <text x={sx} y={subTop+subH/2+5.5} textAnchor="middle"
+                      fill={col3} fontSize="8.5" fontWeight="700"
                       fontFamily="'Lora',serif">
                       {mmTrunc(sub.name,14)}
                     </text>
@@ -3200,13 +3600,17 @@ function VTreeMM({s,col,name,uid}){
                 );
               })}
 
-              {/* Topic node */}
-              <rect x={tx-50} y={topY-18} width="100" height="36" rx="18"
+              {/* ── Topic node — glowing gradient pill ── */}
+              <rect x={tx-56} y={topY-22} width="112" height="44" rx="22"
+                fill={col} opacity="0.2" filter={`url(#vGlow-${uid})`}/>
+              <rect x={tx-54} y={topY-20} width="108" height="40" rx="20"
                 fill={`url(#vGrad-${uid})`} filter={`url(#vShadow-${uid})`}/>
-              <rect x={tx-46} y={topY-14} width="92" height="28" rx="14"
-                fill="none" stroke="rgba(255,255,255,0.18)" strokeWidth="1.2"/>
+              <rect x={tx-50} y={topY-16} width="100" height="32" rx="16"
+                fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.2"/>
+              {/* Shine */}
+              <circle cx={tx-20} cy={topY-10} r="4.5" fill="#fff" opacity="0.18"/>
               <text x={tx} y={topY+5.5} textAnchor="middle"
-                fill="#fff" fontSize="10" fontWeight="800"
+                fill="#fff" fontSize="10.5" fontWeight="800"
                 fontFamily="'Josefin Sans',sans-serif" letterSpacing="0.5">
                 {mmTrunc(topic.topic,14)}
               </text>
@@ -3214,18 +3618,31 @@ function VTreeMM({s,col,name,uid}){
           );
         })}
 
-        {/* Root node */}
-        <rect x={W/2-88} y={rootY-21} width="176" height="42" rx="21"
-          fill={col} filter={`url(#vShadow-${uid})`}/>
-        <rect x={W/2-84} y={rootY-17} width="168" height="34" rx="17"
-          fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.5"/>
+        {/* ── Root node — gem ── */}
+        <rect x={W/2-96} y={rootY-25} width="192" height="50" rx="25"
+          fill={col} opacity="0.22" filter={`url(#vGlow-${uid})`}/>
+        <rect x={W/2-92} y={rootY-22} width="184" height="44" rx="22"
+          fill={`url(#vRootGem-${uid})`} filter={`url(#vShadow-${uid})`}/>
+        <rect x={W/2-88} y={rootY-18} width="176" height="36" rx="18"
+          fill="none" stroke="rgba(255,255,255,0.25)" strokeWidth="1.5"/>
+        <rect x={W/2-80} y={rootY-12} width="160" height="24" rx="12"
+          fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="1"/>
+        {/* Specular */}
+        <circle cx={W/2-42} cy={rootY-12} r="6" fill="#fff" opacity="0.2"/>
+        <circle cx={W/2-52} cy={rootY-14} r="3" fill="#fff" opacity="0.28"/>
         {mmSplitName(name).map((line,i,arr)=>(
-          <text key={i} x={W/2} y={rootY+(i-(arr.length-1)/2)*15+5}
-            textAnchor="middle" fill="#fff" fontSize="13.5" fontWeight="900"
+          <text key={i} x={W/2} y={rootY+(i-(arr.length-1)/2)*16+6}
+            textAnchor="middle" fill="#fff" fontSize="14" fontWeight="900"
             fontFamily="'Bebas Neue',sans-serif" letterSpacing="1.2">
-            {mmTrunc(line,22)}
+            {mmTrunc(line,24)}
           </text>
         ))}
+
+        {/* Corner ornaments */}
+        <text x="8" y="22" fill={col} fontSize="14" opacity="0.25" fontFamily="serif">✦</text>
+        <text x={W-20} y="22" fill={col} fontSize="14" opacity="0.25" fontFamily="serif">✦</text>
+        <text x="8" y={H-6} fill={col} fontSize="14" opacity="0.2" fontFamily="serif">✦</text>
+        <text x={W-20} y={H-6} fill={col} fontSize="14" opacity="0.2" fontFamily="serif">✦</text>
       </svg>
     </div>
   );
