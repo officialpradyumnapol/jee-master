@@ -3063,14 +3063,41 @@ function HTreeMM({s,col,name,uid}){
 
 // ══════════════════════════════════════════════════════════════════════
 // LAYOUT C — VERTICAL CASCADE  (chapters 2,5,8,11,14 …)
-// Dark layered design. Cascades top ↓ bottom through 4 levels
+// Dark layered design. Concepts stack VERTICALLY under each subtopic
+// so nothing ever overlaps on the concept row.
 // ══════════════════════════════════════════════════════════════════════
 function VTreeMM({s,col,name,uid}){
   const nT=s.length;
-  const W=Math.max(nT*148+80,700);
-  const H=500;
-  const rootY=46,topY=118,subY=210,conY=310;
-  const topXs=s.map((_,i)=>40+(i+0.5)*(W-80)/nT);
+  const MAX_C=3;
+  const CON_H=26;   // height per concept pill row
+  const PAD=10;     // gap between subtopic node bottom and first concept
+
+  // ── Pre-compute all X positions ──────────────────────────────────────
+  // Give each topic an equal horizontal slice
+  const slotW=(800-80)/Math.max(nT,1);
+  const W=Math.max(nT*slotW+80, 700);
+  const topXs=s.map((_,i)=>40+(i+0.5)*slotW);
+
+  // Per-topic: subtopics spread horizontally within the slot
+  const subXsAll=s.map((topic,i)=>{
+    const tx=topXs[i];
+    const nS=topic.subtopics.length;
+    const spread=nS>1?Math.min(slotW*0.82,(nS-1)*70):0;
+    return topic.subtopics.map((_,j)=>
+      nS>1?tx+(j-(nS-1)/2)*(spread/Math.max(nS-1,1)):tx);
+  });
+
+  // ── Fixed Y positions for root / topics / subtopic tops ──────────────
+  const rootY=48;
+  const topY=128;
+  const subTop=210;   // top of subtopic node
+  const subH=32;      // subtopic node height
+  const subBot=subTop+subH;  // bottom of subtopic node
+  const conStartY=subBot+PAD+CON_H/2; // centre of first concept pill
+
+  // Tallest column determines canvas height
+  const maxCons=s.reduce((m,topic)=>Math.max(m,...topic.subtopics.map(sub=>Math.min(sub.concepts.length,MAX_C))),0);
+  const H=conStartY+maxCons*CON_H+40;
 
   return(
     <div style={{overflowX:"auto",borderRadius:18,border:`1.5px solid ${col}40`,
@@ -3089,23 +3116,15 @@ function VTreeMM({s,col,name,uid}){
           </filter>
         </defs>
 
-        {/* Horizontal level bands */}
-        {[topY,subY,conY].map((y,li)=>(
-          <rect key={li} x={0} y={y-22} width={W} height={44}
-            fill={col} opacity={0.025-(li*0.005)}/>
-        ))}
-
-        {/* Horizontal level marker lines */}
-        {[topY,subY,conY].map((y,li)=>(
-          <line key={li} x1={0} y1={y} x2={W} y2={y}
-            stroke={col} strokeWidth="0.6" strokeOpacity="0.1"/>
-        ))}
-
-        {/* Level labels on the right */}
-        {[["TOPICS",topY],["SUBTOPICS",subY],["CONCEPTS",conY]].map(([l,y])=>(
-          <text key={l} x={W-8} y={y-8} textAnchor="end"
-            fill={col} fontSize="7.5" fontWeight="700" letterSpacing="1.2"
-            fontFamily="'Josefin Sans',sans-serif" opacity="0.4">{l}</text>
+        {/* Level marker lines */}
+        {[[topY,"TOPICS"],[subTop+subH/2,"SUBTOPICS"],[conStartY,"CONCEPTS"]].map(([y,lbl])=>(
+          <g key={lbl}>
+            <line x1={0} y1={y} x2={W} y2={y}
+              stroke={col} strokeWidth="0.6" strokeOpacity="0.1"/>
+            <text x={W-8} y={y-5} textAnchor="end"
+              fill={col} fontSize="7.5" fontWeight="700" letterSpacing="1.2"
+              fontFamily="'Josefin Sans',sans-serif" opacity="0.4">{lbl}</text>
+          </g>
         ))}
 
         {/* Topics horizontal connector */}
@@ -3116,10 +3135,8 @@ function VTreeMM({s,col,name,uid}){
 
         {s.map((topic,i)=>{
           const tx=topXs[i];
+          const subXs=subXsAll[i];
           const nS=topic.subtopics.length;
-          const availW=W/nT-32;
-          const subSpread=nS>1?Math.min(availW*0.88,(nS-1)*58):0;
-          const subXs=topic.subtopics.map((_,j)=>nS>1?tx+(j-(nS-1)/2)*(subSpread/Math.max(nS-1,1)):tx);
 
           return(
             <g key={i}>
@@ -3127,37 +3144,41 @@ function VTreeMM({s,col,name,uid}){
               <path d={mmBz(W/2,rootY+20,tx,topY-18,false)}
                 stroke={col} strokeWidth="2" fill="none" strokeOpacity="0.4" strokeLinecap="round"/>
 
-              {/* Subtopic connector at subtopic level */}
+              {/* Subtopic connector bar */}
               {nS>1&&(
-                <line x1={subXs[0]} y1={subY} x2={subXs[nS-1]} y2={subY}
+                <line x1={subXs[0]} y1={subTop+subH/2} x2={subXs[nS-1]} y2={subTop+subH/2}
                   stroke={col} strokeWidth="1" strokeOpacity="0.13" strokeLinecap="round"/>
               )}
 
               {topic.subtopics.map((sub,j)=>{
                 const sx=subXs[j];
-                const nC=Math.min(sub.concepts.length,3);
-                const cAvailW=availW*0.92/Math.max(nT,1);
-                const cSpread=nC>1?Math.min(cAvailW*0.85,(nC-1)*52):0;
-                const cXs=[...Array(nC)].map((_,k)=>nC>1?sx+(k-(nC-1)/2)*(cSpread/Math.max(nC-1,1)):sx);
+                const nC=Math.min(sub.concepts.length,MAX_C);
 
                 return(
                   <g key={j}>
                     {/* Topic → Subtopic */}
-                    <path d={mmBz(tx,topY+18,sx,subY-15,false)}
+                    <path d={mmBz(tx,topY+18,sx,subTop,false)}
                       stroke={col} strokeWidth="1.5" fill="none"
                       strokeOpacity="0.28" strokeDasharray="5 3" strokeLinecap="round"/>
 
-                    {sub.concepts.slice(0,3).map((c,k)=>{
-                      const cx_=cXs[k];
-                      const label=mmTrunc(mmTerm(c),17);
+                    {/* Concepts — stacked VERTICALLY under each subtopic */}
+                    {sub.concepts.slice(0,MAX_C).map((c,k)=>{
+                      const cy_=conStartY+k*CON_H;
+                      const label=mmTrunc(mmTerm(c),18);
                       return(
                         <g key={k}>
-                          {/* Subtopic → Concept */}
-                          <path d={mmBz(sx,subY+15,cx_,conY-10,false)}
-                            stroke={col} strokeWidth="1" fill="none" strokeOpacity="0.18" strokeLinecap="round"/>
-                          <rect x={cx_-42} y={conY-10} width="84" height="20" rx="10"
-                            fill={col+"1a"} stroke={col+"38"} strokeWidth="0.9"/>
-                          <text x={cx_} y={conY+5} textAnchor="middle"
+                          {/* Line from subtopic bottom to first concept, then straight down */}
+                          {k===0?(
+                            <line x1={sx} y1={subBot} x2={sx} y2={cy_-10}
+                              stroke={col} strokeWidth="1" strokeOpacity="0.2" strokeLinecap="round"/>
+                          ):(
+                            <line x1={sx} y1={cy_-CON_H+10} x2={sx} y2={cy_-10}
+                              stroke={col} strokeWidth="0.8" strokeOpacity="0.15" strokeLinecap="round"/>
+                          )}
+                          {/* Concept pill */}
+                          <rect x={sx-44} y={cy_-10} width="88" height="20" rx="10"
+                            fill={col+"1a"} stroke={col+"40"} strokeWidth="0.9"/>
+                          <text x={sx} y={cy_+5} textAnchor="middle"
                             fill={col} fontSize="7.5" fontWeight="600"
                             fontFamily="'Lora',serif" opacity="0.92">
                             {label}
@@ -3167,10 +3188,10 @@ function VTreeMM({s,col,name,uid}){
                     })}
 
                     {/* Subtopic node */}
-                    <rect x={sx-47} y={subY-15} width="94" height="30" rx="15"
+                    <rect x={sx-47} y={subTop} width="94" height={subH} rx="15"
                       fill="#100d28" stroke={col} strokeWidth="1.6"
                       filter={`url(#vSubShadow-${uid})`}/>
-                    <text x={sx} y={subY+5.5} textAnchor="middle"
+                    <text x={sx} y={subTop+subH/2+5} textAnchor="middle"
                       fill={col} fontSize="8.5" fontWeight="700"
                       fontFamily="'Lora',serif">
                       {mmTrunc(sub.name,14)}
@@ -3179,7 +3200,7 @@ function VTreeMM({s,col,name,uid}){
                 );
               })}
 
-              {/* Topic node — rounded rect gradient */}
+              {/* Topic node */}
               <rect x={tx-50} y={topY-18} width="100" height="36" rx="18"
                 fill={`url(#vGrad-${uid})`} filter={`url(#vShadow-${uid})`}/>
               <rect x={tx-46} y={topY-14} width="92" height="28" rx="14"
@@ -3193,7 +3214,7 @@ function VTreeMM({s,col,name,uid}){
           );
         })}
 
-        {/* Root node — wide capsule */}
+        {/* Root node */}
         <rect x={W/2-88} y={rootY-21} width="176" height="42" rx="21"
           fill={col} filter={`url(#vShadow-${uid})`}/>
         <rect x={W/2-84} y={rootY-17} width="168" height="34" rx="17"
@@ -3205,18 +3226,11 @@ function VTreeMM({s,col,name,uid}){
             {mmTrunc(line,22)}
           </text>
         ))}
-
-        {/* Bottom level label row */}
-        <g opacity="0.4">
-          {[["Chapter",W/2-160,col],["→ Topics",W/2-60,col],["→ Subtopics",W/2+44,col],["→ Concepts",W/2+148,col]].map(([l,lx,lc])=>(
-            <text key={l} x={lx} y={H-10} fill={lc} fontSize="8" fontWeight="700"
-              fontFamily="'Josefin Sans',sans-serif" letterSpacing="0.8">{l}</text>
-          ))}
-        </g>
       </svg>
     </div>
   );
 }
+
 
 // ── FORMULA FLIP CARD (Kanji-app style) ────────────────────────────────
 function FormulaFlipCard({f,subKey,index}){
@@ -4429,10 +4443,8 @@ const SUB_TAGS = [
 
 const SUB_COLS = { Maths:"#7c3aed", Physics:"#ea580c", Chemistry:"#059669", Revision:"#0ea5e9", "Mock Test":"#dc2626" };
 
-// ── Journal shared components — defined OUTSIDE JournalView so React never
-// recreates them on state change. If they were inside JournalView, every
-// keystroke (setDraft) would give them a new function reference, causing
-// React to unmount+remount them — dismissing the mobile keyboard each time.
+// ── Journal shared components — OUTSIDE JournalView so React never
+// recreates them on keystroke (inline defs cause unmount → keyboard dismissed).
 const JOURNAL_COLORS = {
   card:   "linear-gradient(150deg,rgba(18,24,56,0.97),rgba(24,32,72,0.95))",
   border: "rgba(212,175,55,0.2)",
@@ -4527,7 +4539,8 @@ function JournalView(){
     setDraft(e?.text||"");
     setMood(e?.mood??null);
     setHours(e?.hours??0);
-  },[selStr,loaded,entries]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[selStr,loaded]);
 
   async function saveEntry(){
     setSaving(true);
