@@ -4494,13 +4494,17 @@ function JournalView(){
   },[]);
 
   // ── Populate fields when day changes ──
+  // NOTE: 'entries' intentionally excluded from deps — we only want to
+  // repopulate when the selected day or initial load changes, NOT on
+  // every keystroke (which would reset the draft and dismiss the keyboard).
   useEffect(()=>{
     if(!loaded)return;
     const e=entries[selStr];
     setDraft(e?.text||"");
     setMood(e?.mood??null);
     setHours(e?.hours??0);
-  },[selStr,loaded,entries]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  },[selStr,loaded]);
 
   async function saveEntry(){
     setSaving(true);
